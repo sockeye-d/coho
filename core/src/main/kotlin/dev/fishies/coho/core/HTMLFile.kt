@@ -12,4 +12,4 @@ class HTMLFile(val path: Path) : Element(path.name) {
     override fun toString() = "$name (${this::class.simpleName} $path)"
 }
 
-fun Page.html(source: Path) = children.add(HTMLFile(source))
+fun dev.fishies.coho.core.OutputPath.html(source: Path) = children.add(HTMLFile(source))

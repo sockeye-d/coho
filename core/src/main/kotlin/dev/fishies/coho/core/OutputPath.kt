@@ -3,7 +3,7 @@ package dev.fishies.coho.core
 import java.nio.file.Path
 import kotlin.io.path.createDirectory
 
-open class Page(name: String, val src: Source) : Element(name) {
+open class OutputPath(name: String, val src: Source) : Element(name) {
     internal val children = mutableListOf<Element>()
 
     override fun generate(location: Path) {
@@ -19,5 +19,5 @@ open class Page(name: String, val src: Source) : Element(name) {
     operator fun String.unaryPlus() = src.path(this)
 }
 
-fun Page.page(name: String, block: Page.() -> Unit) =
-    children.add(Page(name, src.cd(name)).apply { block() })
+fun dev.fishies.coho.core.OutputPath.path(name: String, block: dev.fishies.coho.core.OutputPath.() -> Unit) =
+    children.add(OutputPath(name, src.cd(name)).apply { block() })

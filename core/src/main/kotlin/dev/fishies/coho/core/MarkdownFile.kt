@@ -21,4 +21,4 @@ class MarkdownFile(val path: Path) : Element(path.name) {
     override fun toString() = "$name (${this::class.simpleName} $path)"
 }
 
-fun Page.md(source: Path) = children.add(MarkdownFile(source))
+fun dev.fishies.coho.core.OutputPath.md(source: Path) = children.add(MarkdownFile(source))

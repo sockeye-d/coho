@@ -1,28 +1,22 @@
-import dev.fishies.coho.core.Source
-import dev.fishies.coho.core.html
 import dev.fishies.coho.core.md
-import dev.fishies.coho.core.page
+import dev.fishies.coho.core.path
 import dev.fishies.coho.core.root
-import java.nio.file.Path
-import java.nio.file.Paths
 import kotlin.io.path.ExperimentalPathApi
-import kotlin.io.path.Path
-import kotlin.io.path.absolutePathString
-import kotlin.io.path.deleteRecursively
+import kotlin.io.path.name
 
 @OptIn(ExperimentalPathApi::class)
 fun main() {
-    val x = root(Source("src")) {
+    val build = root("src") {
         md(+"index.md")
-        page("projects") {
-            md(+"godl.md")
-            md(+"sled.md")
-            md(+"coho.md")
+        md(+"other.md")
+        path("projects") {
+            for (path in src.files("*.md")) {
+                md(+path.name)
+            }
         }
     }
 
-    println(x)
+    println(build)
 
-    Paths.get("build").deleteRecursively()
-    x.generate("build")
+    build.forceGenerate("build")
 }
