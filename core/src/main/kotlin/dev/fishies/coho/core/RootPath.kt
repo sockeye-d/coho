@@ -1,21 +1,13 @@
 package dev.fishies.coho.core
 
-import jdk.internal.org.jline.keymap.KeyMap.key
-import jdk.jfr.internal.EventWriterKey.getKey
-import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardWatchEventKinds.ENTRY_CREATE
-import java.nio.file.StandardWatchEventKinds.ENTRY_DELETE
-import java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY
-import java.nio.file.StandardWatchEventKinds.OVERFLOW
-import java.nio.file.WatchEvent
+import java.nio.file.StandardWatchEventKinds.*
 import java.nio.file.WatchKey
 import java.nio.file.WatchService
 import kotlin.io.path.createDirectory
 import kotlin.io.path.isDirectory
 import kotlin.io.path.isHidden
-import kotlin.io.path.isRegularFile
 
 
 class RootPath(sourceDirectory: Source) : OutputPath("root", sourceDirectory) {
@@ -68,6 +60,8 @@ class RootPath(sourceDirectory: Source) : OutputPath("root", sourceDirectory) {
                 )
 
                 rebuild()
+
+                println("Rebuild complete")
 
                 if (kind == ENTRY_CREATE && fullPath.isDirectory()) {
                     registerDirectory(fullPath)
