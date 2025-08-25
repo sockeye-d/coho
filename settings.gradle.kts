@@ -13,5 +13,8 @@ plugins {
 }
 
 include(":core")
+include(":markdown")
+include(":server")
+include(":test")
 
 rootProject.name = "coho"

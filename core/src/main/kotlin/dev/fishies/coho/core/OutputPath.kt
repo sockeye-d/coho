@@ -4,9 +4,9 @@ import java.nio.file.Path
 import kotlin.io.path.createDirectory
 
 open class OutputPath(name: String, val src: Source) : Element(name) {
-    internal val children = mutableListOf<Element>()
+    val children = mutableListOf<Element>()
 
-    override fun generate(location: Path) {
+    override fun _generate(location: Path) {
         val contentPath = location.resolve(name)
         contentPath.createDirectory()
         for (child in children) {
