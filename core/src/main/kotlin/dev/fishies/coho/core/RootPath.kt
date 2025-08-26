@@ -8,6 +8,7 @@ import java.nio.file.WatchService
 import kotlin.io.path.createDirectory
 import kotlin.io.path.isDirectory
 import kotlin.io.path.isHidden
+import kotlin.io.path.listDirectoryEntries
 
 
 class RootPath(sourceDirectory: Source) : OutputPath("root", sourceDirectory) {
@@ -19,16 +20,24 @@ class RootPath(sourceDirectory: Source) : OutputPath("root", sourceDirectory) {
         }
     }
 
-    fun watch(rebuild: () -> Unit) {
+    fun watch(ignorePaths: Set<Path>, rebuild: () -> Unit) {
         val watcher = src.sourcePath.fileSystem.newWatchService()
         val keys = mutableMapOf<WatchKey, Path>()
 
-        fun registerDirectory(dir: Path) {
-            keys[dir.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY)] = dir
-            println("Registered $dir")
+        val watchDir: (Path) -> Unit = {
+            keys[it.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY)] = it
         }
 
-        Files.walk(src.sourcePath).filter { it.isDirectory() }.forEach { registerDirectory(it) }
+        fun walkDir(dir: Path) {
+            watchDir(dir)
+            dir.listDirectoryEntries().filter {
+                it.isDirectory() && !it.isHidden() && it.normalize() !in ignorePaths
+            }.forEach {
+                walkDir(it)
+            }
+        }
+
+        walkDir(src.sourcePath)
 
         while (true) {
             val key = getKey(watcher) { return }
@@ -48,6 +57,10 @@ class RootPath(sourceDirectory: Source) : OutputPath("root", sourceDirectory) {
                     continue
                 }
 
+                if (fullPath.normalize() in ignorePaths) {
+                    continue
+                }
+
                 println(
                     "$fullPath ${
                         when (kind) {
@@ -64,7 +77,7 @@ class RootPath(sourceDirectory: Source) : OutputPath("root", sourceDirectory) {
                 println("Rebuild complete")
 
                 if (kind == ENTRY_CREATE && fullPath.isDirectory()) {
-                    registerDirectory(fullPath)
+                    watchDir(fullPath)
                 }
             }
 
@@ -88,4 +101,4 @@ class RootPath(sourceDirectory: Source) : OutputPath("root", sourceDirectory) {
 }
 
 fun root(sourceDirectory: Source, block: RootPath.() -> Unit) = RootPath(sourceDirectory).apply { block() }
-fun root(sourceDirectory: String, block: RootPath.() -> Unit) = root(Source(sourceDirectory), block)
+fun root(sourceDirectory: String = ".", block: RootPath.() -> Unit) = root(Source(sourceDirectory), block)

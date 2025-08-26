@@ -1,4 +1,4 @@
-package dev.fishies.coho.server
+package dev.fishies.coho.cli
 
 import io.ktor.server.engine.*
 import io.ktor.server.http.content.*

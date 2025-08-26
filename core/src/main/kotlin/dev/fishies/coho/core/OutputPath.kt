@@ -19,5 +19,5 @@ open class OutputPath(name: String, val src: Source) : Element(name) {
     operator fun String.unaryPlus() = src.path(this)
 }
 
-fun dev.fishies.coho.core.OutputPath.path(name: String, block: dev.fishies.coho.core.OutputPath.() -> Unit) =
+fun OutputPath.path(name: String, block: OutputPath.() -> Unit) =
     children.add(OutputPath(name, src.cd(name)).apply { block() })

@@ -30,20 +30,28 @@ class KtHTMLFile(val path: Path, val context: Map<String, Any>) : Element(path.n
             }
 
             val closeIndex = text.indexOf("?>", openIndex)
-            assert(closeIndex >= 0) { "No closing tag found in file $path" }
+
+            if (closeIndex < 0) {
+                error("No closing tag found in file $path")
+            }
+
             val cleanText = text.substr(openIndex + 4, closeIndex)
             openIndex = closeIndex + 2
 
-            val scriptEngine = engineManager.getEngineByName("kotlin")!!
-            val bindings = SimpleBindings()
-            for ((key, value) in context) {
-                bindings[key] = value
-            }
-            scriptEngine.setBindings(bindings, ScriptContext.ENGINE_SCOPE)
-            builder.append(scriptEngine.eval(cleanText).toString())
+            builder.append(runScript(cleanText))
         } while (openIndex > 0)
 
         location.resolve(name).writeText(builder)
+    }
+
+    private fun runScript(cleanText: String): String {
+        val scriptEngine = engineManager.getEngineByName("kotlin")!!
+        val bindings = SimpleBindings()
+        for ((key, value) in context) {
+            bindings[key] = value
+        }
+        scriptEngine.setBindings(bindings, ScriptContext.ENGINE_SCOPE)
+        return scriptEngine.eval(cleanText).toString()
     }
 
     override fun toString() = "$name (${this::class.simpleName} $path)"
