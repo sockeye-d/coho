@@ -12,8 +12,9 @@ dependencies {
     implementation("io.ktor:ktor-server-core:3.2.3")
     implementation("io.ktor:ktor-server-netty:3.2.3")
     implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.6")
+    implementation("io.ktor:ktor-server-websockets:3.2.3")
+    implementation("org.slf4j:slf4j-nop:2.0.17")
     implementation(project(":core"))
-    implementation(project(":markdown"))
 }
 
 kotlin {
@@ -46,6 +47,6 @@ graalvmNative {
     }
 }
 
-tasks.shadowJar {
-    minimize()
-}
+//tasks.shadowJar {
+//    minimize()
+//}

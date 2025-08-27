@@ -1,6 +1,5 @@
-package dev.fishies.coho.markdown
+package dev.fishies.coho.core
 
-import dev.fishies.coho.core.OutputPath
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.*
 import org.intellij.markdown.ast.ASTNode
@@ -48,7 +47,7 @@ open class ProcessedMarkdownFile(path: Path, val htmlTemplate: ProcessedMarkdown
             }.parseToJsonElement(frontmatterText).jsonObject.map()
         } catch (e: Exception) {
             // if only I could catch JSON-specific exceptions 😔
-            println("Failed to parse frontmatter $frontmatterText. Reason: ${e.message}")
+            err("Failed to parse frontmatter $frontmatterText. Reason: ${e.message}")
         }
 
         return src.substring(nextSeparator + 3)

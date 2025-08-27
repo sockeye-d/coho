@@ -12,7 +12,6 @@ plugins {
 }
 
 include(":core")
-include(":markdown")
 include(":cli")
 
 rootProject.name = "coho"

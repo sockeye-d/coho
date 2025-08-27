@@ -1,7 +1,5 @@
-package dev.fishies.coho.markdown
+package dev.fishies.coho.core
 
-import dev.fishies.coho.core.Element
-import dev.fishies.coho.core.OutputPath
 import org.intellij.markdown.ast.ASTNode
 import org.intellij.markdown.flavours.MarkdownFlavourDescriptor
 import org.intellij.markdown.flavours.commonmark.CommonMarkFlavourDescriptor

@@ -1,6 +1,5 @@
 package dev.fishies.coho.core
 
-import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardWatchEventKinds.*
 import java.nio.file.WatchKey
@@ -9,6 +8,7 @@ import kotlin.io.path.createDirectory
 import kotlin.io.path.isDirectory
 import kotlin.io.path.isHidden
 import kotlin.io.path.listDirectoryEntries
+import kotlin.time.TimeSource
 
 
 class RootPath(sourceDirectory: Source) : OutputPath("root", sourceDirectory) {
@@ -20,7 +20,7 @@ class RootPath(sourceDirectory: Source) : OutputPath("root", sourceDirectory) {
         }
     }
 
-    fun watch(ignorePaths: Set<Path>, rebuild: () -> Unit) {
+    fun watch(ignorePaths: Set<Path>, rebuild: () -> Boolean) {
         val watcher = src.sourcePath.fileSystem.newWatchService()
         val keys = mutableMapOf<WatchKey, Path>()
 
@@ -61,7 +61,7 @@ class RootPath(sourceDirectory: Source) : OutputPath("root", sourceDirectory) {
                     continue
                 }
 
-                println(
+                info(
                     "$fullPath ${
                         when (kind) {
                             ENTRY_CREATE -> "created"
@@ -69,12 +69,15 @@ class RootPath(sourceDirectory: Source) : OutputPath("root", sourceDirectory) {
                             ENTRY_DELETE -> "delete"
                             else -> "???"
                         }
-                    }"
+                    }, rebuilding"
                 )
 
-                rebuild()
-
-                println("Rebuild complete")
+                val startTime = TimeSource.Monotonic.markNow()
+                if (rebuild()) {
+                    pos("Rebuild complete in ${startTime.elapsedNow()}")
+                } else {
+                    err("Rebuild failed")
+                }
 
                 if (kind == ENTRY_CREATE && fullPath.isDirectory()) {
                     watchDir(fullPath)
