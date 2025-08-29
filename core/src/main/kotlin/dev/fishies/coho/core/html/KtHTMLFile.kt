@@ -1,9 +1,14 @@
-package dev.fishies.coho.core
+package dev.fishies.coho.core.html
 
+import dev.fishies.coho.core.Element
+import dev.fishies.coho.core.OutputPath
+import dev.fishies.coho.core.err
+import dev.fishies.coho.core.info
 import java.nio.file.Path
 import javax.script.ScriptContext
 import javax.script.ScriptEngineManager
 import javax.script.SimpleBindings
+import kotlin.collections.iterator
 import kotlin.io.path.name
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
@@ -40,18 +45,21 @@ fun templateHtml(html: String, onErrorAction: () -> Unit, templateAction: (Strin
 
 class KtHTMLFile(val path: Path, val context: Map<String, Any>) : Element(path.name) {
 
-    override fun _generate(location: Path) {
-        val text = path.readText()
-
-        location.resolve(name).writeText(templateHtml(text, { err("No closing tag found in file $path") }) {
+    override fun _generate(location: Path): List<Path> = listOf(location.resolve(name).apply {
+        writeText(templateHtml(path.readText(), { err("No closing tag found in file $path") }) {
             runScript(it)
         })
-    }
+    })
 
     private fun runScript(cleanText: String): String {
+        val fullContext = context + globalContext
+        if (cleanText.trim() in fullContext) {
+            info("Simple replacement detected on $cleanText, not evaluating", verbose = true)
+            return fullContext[cleanText.trim()].toString()
+        }
         val scriptEngine = engineManager.getEngineByName("kotlin")!!
         val bindings = SimpleBindings()
-        for ((key, value) in context) {
+        for ((key, value) in fullContext) {
             bindings[key] = value
         }
         scriptEngine.setBindings(bindings, ScriptContext.ENGINE_SCOPE)
@@ -62,6 +70,7 @@ class KtHTMLFile(val path: Path, val context: Map<String, Any>) : Element(path.n
 
     companion object {
         private val engineManager = ScriptEngineManager()
+        var globalContext: Map<String, Any> = emptyMap()
     }
 }
 

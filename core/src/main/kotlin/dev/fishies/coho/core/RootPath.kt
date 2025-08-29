@@ -4,24 +4,33 @@ import java.nio.file.Path
 import java.nio.file.StandardWatchEventKinds.*
 import java.nio.file.WatchKey
 import java.nio.file.WatchService
+import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.createDirectory
+import kotlin.io.path.deleteRecursively
 import kotlin.io.path.isDirectory
 import kotlin.io.path.isHidden
 import kotlin.io.path.listDirectoryEntries
 import kotlin.time.TimeSource
 
 
-class RootPath(sourceDirectory: Source) : OutputPath("root", sourceDirectory) {
-    override fun _generate(location: Path) {
-        val contentPath = location
-        contentPath.createDirectory()
+class RootPath(sourceDirectory: Source, buildPath: Path) : OutputPath("root", sourceDirectory, buildPath) {
+    override fun _generate(location: Path): List<Path> {
+        location.createDirectory()
         for (child in children) {
-            child.generate(contentPath)
+            child.generate(location)
         }
+        return emptyList()
+    }
+
+    @OptIn(ExperimentalPathApi::class)
+    fun forceGenerate(location: Path = buildPath): Path {
+        location.deleteRecursively()
+        doneCount = 0
+        return generate(location)
     }
 
     fun watch(ignorePaths: Set<Path>, rebuild: () -> Boolean) {
-        val watcher = src.sourcePath.fileSystem.newWatchService()
+        val watcher = source.sourcePath.fileSystem.newWatchService()
         val keys = mutableMapOf<WatchKey, Path>()
 
         val watchDir: (Path) -> Unit = {
@@ -37,7 +46,7 @@ class RootPath(sourceDirectory: Source) : OutputPath("root", sourceDirectory) {
             }
         }
 
-        walkDir(src.sourcePath)
+        walkDir(source.sourcePath)
 
         while (true) {
             val key = getKey(watcher) { return }
@@ -101,7 +110,11 @@ class RootPath(sourceDirectory: Source) : OutputPath("root", sourceDirectory) {
             elseBlock()
         }
     }
+
+    companion object {
+        lateinit var rootBuildPath: Path
+    }
 }
 
-fun root(sourceDirectory: Source, block: RootPath.() -> Unit) = RootPath(sourceDirectory).apply { block() }
+fun root(sourceDirectory: Source, block: RootPath.() -> Unit) = RootPath(sourceDirectory, RootPath.rootBuildPath).apply { block() }
 fun root(sourceDirectory: String = ".", block: RootPath.() -> Unit) = root(Source(sourceDirectory), block)

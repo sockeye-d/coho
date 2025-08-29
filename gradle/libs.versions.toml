@@ -1,0 +1,22 @@
+[versions]
+kotlin = "2.2.10"
+ktor-server = "3.2.3"
+
+[libraries]
+stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8", version.ref = "kotlin" }
+jsr233-kt = { group = "org.jetbrains.kotlin", name = "kotlin-scripting-jsr223", version.ref = "kotlin" }
+ktx-json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0"
+ktx-cli = "org.jetbrains.kotlinx:kotlinx-cli:0.3.6"
+markdown = "org.jetbrains:markdown:0.7.3"
+ktor-server-core = { group = "io.ktor", name = "ktor-server-core", version.ref = "ktor-server"}
+ktor-server-netty = { group = "io.ktor", name = "ktor-server-netty", version.ref = "ktor-server"}
+ktor-server-websockets = { group = "io.ktor", name = "ktor-server-websockets", version.ref = "ktor-server"}
+slf4j-nop = "org.slf4j:slf4j-nop:2.0.17"
+
+[bundles]
+ktor = [
+    "ktor-server-core",
+    "ktor-server-netty",
+    "ktor-server-websockets",
+    "slf4j-nop",
+]

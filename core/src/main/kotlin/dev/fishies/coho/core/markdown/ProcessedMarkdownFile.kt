@@ -1,5 +1,7 @@
-package dev.fishies.coho.core
+package dev.fishies.coho.core.markdown
 
+import dev.fishies.coho.core.OutputPath
+import dev.fishies.coho.core.err
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.*
 import org.intellij.markdown.ast.ASTNode

@@ -1,6 +1,7 @@
 package dev.fishies.coho.cli
 
-import dev.fishies.coho.core.POSITIVE
+import dev.fishies.coho.core.info
+import dev.fishies.coho.core.pos
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -20,18 +21,20 @@ const reload = new WebSocket("/reload");
 reload.addEventListener('message', event => {
     console.log("reloading");
     location.reload();
+    // fetch(location.href).then(x => x.text()).then(text => {
+    //     document.open();
+    //     document.write(text);
+    //     document.close()
+    // });
 });
 """
 
 private val endHtmlRegex = Regex("<\\s*?/\\s*?[hH][tT][mM][lL]\\s*?>")
 
 private fun injectReloadJs(html: String): String {
-    val endHtmlIndex = endHtmlRegex.find(html)?.groups?.get(0)?.range?.start
-    if (endHtmlIndex == null) {
-        return html
-    }
+    val endHtmlIndex = endHtmlRegex.find(html)?.groups?.get(0)?.range?.start ?: return html
     // language=html
-    return "${html.substring(0, endHtmlIndex)}<script>$RELOAD_JS</script>${html.substring(endHtmlIndex)}"
+    return "${html.take(endHtmlIndex)}<script>$RELOAD_JS</script>${html.substring(endHtmlIndex)}"
 }
 
 fun runLocalServer(buildPath: Path, reload: StateFlow<Int>, noReloadScript: Boolean, port: Int = 8080) =
@@ -39,12 +42,14 @@ fun runLocalServer(buildPath: Path, reload: StateFlow<Int>, noReloadScript: Bool
         install(WebSockets)
         routing {
             webSocket("/reload") {
+                pos("Client connected, live reload is active")
                 var lastReloadState: Int? = null
                 reload.collect {
                     if (lastReloadState == null) {
                         lastReloadState = it
                     } else if (lastReloadState != it) {
                         lastReloadState = it
+                        info("Reloading clients", verbose = true)
                         send("reload please")
                     }
                 }

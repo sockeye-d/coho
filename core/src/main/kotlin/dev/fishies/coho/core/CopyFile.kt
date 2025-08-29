@@ -4,10 +4,8 @@ import java.nio.file.Path
 import kotlin.io.path.copyTo
 import kotlin.io.path.name
 
-class CopyFile(val path: Path) : Element(path.name) {
-    override fun _generate(location: Path) {
-        path.copyTo(location.resolve(name))
-    }
+open class CopyFile(val path: Path) : Element(path.name) {
+    override fun _generate(location: Path): List<Path> = listOf(location.resolve(name).also { path.copyTo(it) })
 
     override fun toString() = "$name (${this::class.simpleName} $path)"
 }
