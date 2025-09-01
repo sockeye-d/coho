@@ -4,16 +4,12 @@ import java.nio.file.Path
 import java.nio.file.StandardWatchEventKinds.*
 import java.nio.file.WatchKey
 import java.nio.file.WatchService
-import kotlin.io.path.ExperimentalPathApi
-import kotlin.io.path.createDirectory
-import kotlin.io.path.deleteRecursively
-import kotlin.io.path.isDirectory
-import kotlin.io.path.isHidden
-import kotlin.io.path.listDirectoryEntries
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.io.path.*
 import kotlin.time.TimeSource
 
-
-class RootPath(sourceDirectory: Source, buildPath: Path) : OutputPath("root", sourceDirectory, buildPath) {
+class RootPath(sourceDirectory: Source, buildPath: Path) : OutputPath("root", sourceDirectory, buildPath, { html: String -> "<!DOCTYPE HTML><html>$html</html>" }) {
     override fun _generate(location: Path): List<Path> {
         location.createDirectory()
         for (child in children) {
@@ -29,7 +25,8 @@ class RootPath(sourceDirectory: Source, buildPath: Path) : OutputPath("root", so
         return generate(location)
     }
 
-    fun watch(ignorePaths: Set<Path>, rebuild: () -> Boolean) {
+    @OptIn(ExperimentalAtomicApi::class)
+    fun watch(ignorePaths: Set<Path>, exit: AtomicBoolean, rebuild: () -> Boolean) {
         val watcher = source.sourcePath.fileSystem.newWatchService()
         val keys = mutableMapOf<WatchKey, Path>()
 
@@ -48,8 +45,15 @@ class RootPath(sourceDirectory: Source, buildPath: Path) : OutputPath("root", so
 
         walkDir(source.sourcePath)
 
-        while (true) {
-            val key = getKey(watcher) { return }
+        watchLoop@while (true) {
+            // val key = watcher.getKey { return }
+            var key: WatchKey? = null
+            while (key == null) {
+                // delay(50.milliseconds)
+                Thread.sleep(50)
+                if (exit.load()) break@watchLoop
+                key = watcher.poll()
+            }
             val dir = keys[key] ?: error("hi")
 
             for (event in key.pollEvents()) {
@@ -103,10 +107,10 @@ class RootPath(sourceDirectory: Source, buildPath: Path) : OutputPath("root", so
         watcher.close()
     }
 
-    private inline fun getKey(watcher: WatchService, elseBlock: () -> Nothing): WatchKey {
+    private inline fun WatchService.getKey(elseBlock: () -> Nothing): WatchKey {
         try {
-            return watcher.take()
-        } catch (e: InterruptedException) {
+            return take()
+        } catch (_: InterruptedException) {
             elseBlock()
         }
     }

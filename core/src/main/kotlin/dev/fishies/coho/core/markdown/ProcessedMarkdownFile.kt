@@ -9,7 +9,9 @@ import org.intellij.markdown.flavours.MarkdownFlavourDescriptor
 import org.intellij.markdown.html.HtmlGenerator
 import java.nio.file.Path
 
-open class ProcessedMarkdownFile(path: Path, val htmlTemplate: ProcessedMarkdownFile.(html: String) -> String) :
+typealias MarkdownTemplate = ProcessedMarkdownFile.(html: String) -> String
+
+open class ProcessedMarkdownFile(path: Path, val markdownTemplate: MarkdownTemplate) :
     MarkdownFile(path) {
     var frontmatter: Map<String, Any> = emptyMap()
     private fun JsonObject.map(): Map<String, Any> = this.mapValues { (_, value) ->
@@ -57,12 +59,7 @@ open class ProcessedMarkdownFile(path: Path, val htmlTemplate: ProcessedMarkdown
 
     override fun createHtml(src: String, tree: ASTNode, flavour: MarkdownFlavourDescriptor): String {
         val html = HtmlGenerator(src, tree, flavour).generateHtml()
-        return htmlTemplate(html)
-    }
-
-    companion object {
-        var defaultTemplate: ProcessedMarkdownFile.(html: String) -> String =
-            { html: String -> "<!DOCTYPE HTML><html>$html</html>" }
+        return markdownTemplate(html)
     }
 }
 
@@ -94,6 +91,6 @@ ${html.prependIndent()}
 
 fun OutputPath.md(
     source: Path,
-    htmlTemplate: ProcessedMarkdownFile.(html: String) -> String = ProcessedMarkdownFile.defaultTemplate,
+    markdownTemplate: MarkdownTemplate = this.markdownTemplate,
 ) =
-    children.add(ProcessedMarkdownFile(source, htmlTemplate))
+    children.add(ProcessedMarkdownFile(source, markdownTemplate))

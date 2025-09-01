@@ -42,7 +42,7 @@ fun runLocalServer(buildPath: Path, reload: StateFlow<Int>, noReloadScript: Bool
         install(WebSockets)
         routing {
             webSocket("/reload") {
-                pos("Client connected, live reload is active")
+                pos("Client connected, live reload is active", verbose = true)
                 var lastReloadState: Int? = null
                 reload.collect {
                     if (lastReloadState == null) {
@@ -60,6 +60,7 @@ fun runLocalServer(buildPath: Path, reload: StateFlow<Int>, noReloadScript: Bool
                 }
                 modify { file, call ->
                     if (file.extension == "html") {
+                        info("Injecting reload JS into $file", verbose = true)
                         call.respondText(injectReloadJs(file.readText()), ContentType.Text.Html)
                     }
                 }
