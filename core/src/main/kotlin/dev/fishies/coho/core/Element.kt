@@ -6,7 +6,8 @@ import kotlin.io.path.name
 abstract class Element(val name: String) {
     protected abstract fun _generate(location: Path): List<Path>
 
-    fun generate(location: Path): Path {
+    open fun generate(location: Path? = null): Path {
+        requireNotNull(location)
         _generate(location).forEach {
             doneCount++
             if (doneCount > maxCount) {
@@ -14,7 +15,6 @@ abstract class Element(val name: String) {
             }
             info("generated $it", verbose = true)
             if (showProgress) {
-                // print("\r$ERASE_LINE[${(doneCount * 100 / maxCount).coerceIn(0..100).toString().padStart(3, ' ')}%] ${it.name}")
                 info("[${(doneCount * 100 / maxCount).coerceIn(0..100).toString().padStart(3, ' ')}%] ${it.name}")
             }
         }
@@ -28,6 +28,7 @@ abstract class Element(val name: String) {
     companion object {
         @JvmStatic
         protected var doneCount = 0
+
         @JvmStatic
         protected var maxCount = 0
         var showProgress = false

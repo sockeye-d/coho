@@ -55,11 +55,8 @@ fun runLocalServer(buildPath: Path, reload: StateFlow<Int>, noReloadScript: Bool
                 }
             }
             staticFiles("/", buildPath.absolute().toFile()) {
-                if (noReloadScript) {
-                    return@staticFiles
-                }
                 modify { file, call ->
-                    if (file.extension == "html") {
+                    if (file.extension == "html" && !noReloadScript) {
                         info("Injecting reload JS into $file", verbose = true)
                         call.respondText(injectReloadJs(file.readText()), ContentType.Text.Html)
                     }

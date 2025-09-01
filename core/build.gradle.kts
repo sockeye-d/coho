@@ -6,9 +6,9 @@ plugins {
 
 dependencies {
     implementation(libs.stdlib)
-    implementation(libs.jsr233.kt)
+    implementation(libs.bundles.kts)
     implementation(libs.markdown)
-    implementation(libs.ktx.json)
+    implementation(libs.ktx.yaml)
 }
 
 kotlin {

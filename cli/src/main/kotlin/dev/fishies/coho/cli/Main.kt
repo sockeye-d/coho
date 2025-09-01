@@ -1,6 +1,8 @@
 package dev.fishies.coho.cli
 
 import dev.fishies.coho.core.*
+import io.ktor.server.engine.EmbeddedServer
+import io.ktor.server.netty.NettyApplicationEngine
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.ExperimentalCli
@@ -18,6 +20,145 @@ import kotlin.concurrent.thread
 import kotlin.io.path.*
 import kotlin.jvm.java
 import kotlin.time.TimeSource
+
+@OptIn(ExperimentalCli::class, ExperimentalPathApi::class, ExperimentalAtomicApi::class)
+fun main(args: Array<String>) {
+    val parser = ArgParser("coho")
+    val cohoScriptPath by parser.option(
+        PathArgType, "path", description = "Path to the coho script file", shortName = "i"
+    ).default(Paths.get("main.coho.kts"))
+    val buildPath by parser.option(
+        PathArgType, "build-path", description = "Path to the build directory", shortName = "B"
+    ).default(Paths.get("build"))
+    val useServer by parser.option(
+        ArgType.Boolean, "serve", description = "Show a live-updating localhost webserver", shortName = "s"
+    ).default(false)
+    val serverPort by parser.option(ArgType.Int, "server-port", description = "Integrated server port", shortName = "p")
+        .default(8080)
+    val portRetryCount by parser.option(
+        ArgType.Int,
+        "port-retry-count",
+        description = "How many times to try different ports if the current port is already in use (default: infinite)"
+    )
+    val noReloadScript by parser.option(
+        ArgType.Boolean,
+        "no-reload-script",
+        description = "Don't inject the hot reload script into HTML files (only when using integrated server, it's never included in build outputs)"
+    ).default(false)
+    val verbose by parser.option(ArgType.Boolean, "verbose", "v", "Show extra information").default(false)
+    val force by parser.option(
+        ArgType.Boolean, "force", "f", "Force overwrite existing files to create a new coho project"
+    ).default(false)
+    val create by parser.option(ArgType.Boolean, "create", description = "Create a new coho script file").default(false)
+    val noProgress by parser.option(ArgType.Boolean, "no-progress", description = "Don't show progress").default(false)
+    parser.parse(args)
+    ANSI.showVerbose = verbose
+    Element.showProgress = !noProgress
+
+    if (create) {
+        createProject(cohoScriptPath, force) ?: return
+    } else if (!cohoScriptPath.exists()) {
+        err("coho script $cohoScriptPath does not exist")
+        note("create a new coho project with --create")
+        return
+    }
+
+    RootPath.rootBuildPath = buildPath
+
+    note("Evaluating $cohoScriptPath...")
+    val evalTimer = TimeSource.Monotonic.markNow()
+    var structure = build(cohoScriptPath)
+    @Suppress("FoldInitializerAndIfToElvis", "RedundantSuppression") if (structure == null) {
+        return
+    }
+    pos("Evaluation complete in ${evalTimer.elapsedNow()}")
+
+    note("Building...")
+    val rebuildTimer = TimeSource.Monotonic.markNow()
+    structure.generate(buildPath)
+    pos("Rebuild complete in ${rebuildTimer.elapsedNow()}")
+    if (!useServer) {
+        return
+    }
+
+    note("Starting server...")
+
+    val reload = MutableStateFlow(0)
+    val server = findServerPort(portRetryCount, serverPort, buildPath, reload, noReloadScript)
+
+    if (server == null) {
+        err("All attempted ports were already in use")
+        return
+    }
+
+    if (!noReloadScript) {
+        note("Hot reload is active")
+    }
+
+    val watchExit = AtomicBoolean(false)
+    val stopServerHook = thread(start = false, name = "StopServerHook") {
+        watchExit.store(true)
+    }
+    Runtime.getRuntime().addShutdownHook(stopServerHook)
+
+    structure.watch(ignorePaths = setOf(buildPath), exit = watchExit) {
+        try {
+            structure = build(cohoScriptPath)
+        } catch (e: ScriptException) {
+            err("Failed to run script: ${e.message}")
+            return@watch false
+        }
+
+        if (structure == null) {
+            return@watch false
+        }
+
+        val tempBuildPath = createTempDirectory("coho-build-${buildPath.name}")
+        RootPath.rootBuildPath = tempBuildPath
+        val tempDir = attempt({ structure!!.generate(tempBuildPath) }) { ex: Exception ->
+            err("Failed to generate file ${ex.message} (${ex::class.simpleName})")
+            tempBuildPath.deleteRecursively()
+            return@watch false
+        }
+        if (tempDir == null) {
+            tempBuildPath.deleteRecursively()
+            return@watch false
+        }
+        buildPath.deleteRecursively()
+        tempDir.copyToRecursively(buildPath, followLinks = true, overwrite = true)
+        tempDir.deleteRecursively()
+        reload.value++
+        true
+    }
+    info("Stopping server")
+    try {
+        server.stop(500, 500, TimeUnit.MILLISECONDS)
+    } catch (_: Exception) {
+        err("Server failed to stopped nicely")
+        return
+    }
+    pos("Server stopped")
+    Runtime.getRuntime().halt(0)
+}
+
+private fun findServerPort(
+    portRetryCount: Int?, serverPort: Int, buildPath: Path, reload: MutableStateFlow<Int>, noReloadScript: Boolean
+): EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>? {
+    var server: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>? = null
+    for (port in if (portRetryCount != null) serverPort..serverPort + portRetryCount else serverPort..65535) {
+        info("Connecting to port $port")
+        try {
+            server = runLocalServer(buildPath, reload, noReloadScript, port)
+        } catch (_: BindException) {
+            err("Port $serverPort already in use, retrying")
+            server = null
+            continue
+        }
+        pos("Running local server on http://localhost:$port")
+        break
+    }
+    return server
+}
 
 private object PathArgType : ArgType<Path>(true) {
     override val description: kotlin.String
@@ -74,127 +215,13 @@ private fun copyTemplateFile(resource: String, dest: Path, force: Boolean): Unit
     return Unit
 }
 
+private fun copyTemplateFile(resource: String, force: Boolean) =
+    copyTemplateFile(resource, Paths.get(Paths.get(resource).name), force)
+
 private fun createProject(scriptPath: Path, force: Boolean): Unit? {
-    copyTemplateFile("/template/coho.kts", scriptPath, force) ?: return null
-    copyTemplateFile("/template/index.md", Paths.get("index.md"), force) ?: return null
+    copyTemplateFile("/template/main.coho.kts", scriptPath, force) ?: return null
+    copyTemplateFile("/template/index.md", force) ?: return null
+    copyTemplateFile("/template/highlight.js", force) ?: return null
+    copyTemplateFile("/template/index.md", force) ?: return null
     return Unit
-}
-
-@OptIn(ExperimentalCli::class, ExperimentalPathApi::class, ExperimentalAtomicApi::class)
-fun main(args: Array<String>) {
-    val parser = ArgParser("coho")
-    val cohoScriptPath by parser.option(
-        PathArgType, "path", description = "Path to the coho script file", shortName = "i"
-    ).default(Paths.get("coho.kts"))
-    val buildPath by parser.option(
-        PathArgType, "build-path", description = "Path to the build directory", shortName = "B"
-    ).default(Paths.get("build"))
-    val useServer by parser.option(
-        ArgType.Boolean, "serve", description = "Show a live-updating localhost webserver", shortName = "s"
-    ).default(false)
-    val serverPort by parser.option(ArgType.Int, "server-port", description = "Integrated server port", shortName = "p")
-        .default(8080)
-    val noReloadScript by parser.option(
-        ArgType.Boolean,
-        "no-reload-script",
-        description = "Don't inject the hot reload script into HTML files (only when using integrated server, it's never included in build outputs)"
-    ).default(false)
-    val verbose by parser.option(ArgType.Boolean, "verbose", "v", "Show extra information").default(false)
-    val force by parser.option(
-        ArgType.Boolean, "force", "f", "Force overwrite existing files to create a new coho project"
-    ).default(false)
-    val create by parser.option(ArgType.Boolean, "create", description = "Create a new coho script file").default(false)
-    val noProgress by parser.option(ArgType.Boolean, "no-progress", description = "Don't show progress").default(false)
-    parser.parse(args)
-    ANSI.showVerbose = verbose
-    Element.showProgress = !noProgress
-
-    if (create) {
-        createProject(cohoScriptPath, force) ?: return
-    } else if (!cohoScriptPath.exists()) {
-        err("coho script $cohoScriptPath does not exist")
-        note("create a new coho project with --create")
-        return
-    }
-
-    RootPath.rootBuildPath = buildPath
-
-    note("Evaluating $cohoScriptPath...")
-    val evalTimer = TimeSource.Monotonic.markNow()
-    var structure = build(cohoScriptPath)
-    @Suppress("FoldInitializerAndIfToElvis", "RedundantSuppression") if (structure == null) {
-        return
-    }
-    pos("Evaluation complete in ${evalTimer.elapsedNow()}")
-
-    note("Building...")
-    val rebuildTimer = TimeSource.Monotonic.markNow()
-    structure.forceGenerate(buildPath)
-    pos("Rebuild complete in ${rebuildTimer.elapsedNow()}")
-    if (!useServer) {
-        return
-    }
-
-    note("Starting server...")
-
-    val reload = MutableStateFlow(0)
-    val server = attempt({ runLocalServer(buildPath, reload, noReloadScript, serverPort) }) { _: BindException ->
-        err("Port $serverPort already in use")
-        return
-    }!!
-
-    pos("Running local server on http://localhost:$serverPort")
-    if (!noReloadScript) {
-        note("Hot reload is active")
-    }
-
-    val watchExit = AtomicBoolean(false)
-    val hookExit = AtomicBoolean(true)
-    val stopServerHook = thread(start = false, name = "StopServerHook") {
-        watchExit.store(true)
-        while (hookExit.load()) {
-            Thread.sleep(50)
-        }
-    }
-    Runtime.getRuntime().addShutdownHook(stopServerHook)
-
-    structure.watch(ignorePaths = setOf(buildPath), exit = watchExit) {
-        try {
-            structure = build(cohoScriptPath)
-        } catch (e: ScriptException) {
-            err("Failed to run script: ${e.message}")
-            return@watch false
-        }
-
-        if (structure == null) {
-            return@watch false
-        }
-
-        val tempBuildPath = createTempDirectory("coho-build-${buildPath.name}")
-        RootPath.rootBuildPath = buildPath
-        val tempDir = attempt({ structure!!.forceGenerate(tempBuildPath) }) { ex: Exception ->
-            err("Failed to generate file ${ex.message} (${ex::class.simpleName})")
-            tempBuildPath.deleteRecursively()
-            return@watch false
-        }
-        if (tempDir == null) {
-            tempBuildPath.deleteRecursively()
-            return@watch false
-        }
-        buildPath.deleteRecursively()
-        tempDir.copyToRecursively(buildPath, followLinks = true, overwrite = true)
-        tempDir.deleteRecursively()
-        reload.value++
-        true
-    }
-    info("Stopping server")
-    try {
-        server.stop(500, 500, TimeUnit.MILLISECONDS)
-    } catch (_: Exception) {
-        err("Server failed to stopped nicely")
-        return
-    }
-    pos("Server stopped")
-    hookExit.store(false)
-    Runtime.getRuntime().halt(0)
 }

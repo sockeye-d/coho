@@ -3,58 +3,37 @@ package dev.fishies.coho.core.markdown
 import dev.fishies.coho.core.OutputPath
 import dev.fishies.coho.core.err
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.*
+import net.mamoe.yamlkt.Yaml
 import org.intellij.markdown.ast.ASTNode
 import org.intellij.markdown.flavours.MarkdownFlavourDescriptor
 import org.intellij.markdown.html.HtmlGenerator
 import java.nio.file.Path
+import kotlin.collections.get
 
 typealias MarkdownTemplate = ProcessedMarkdownFile.(html: String) -> String
 
-open class ProcessedMarkdownFile(path: Path, val markdownTemplate: MarkdownTemplate) :
-    MarkdownFile(path) {
-    var frontmatter: Map<String, Any> = emptyMap()
-    private fun JsonObject.map(): Map<String, Any> = this.mapValues { (_, value) ->
-        when (value) {
-            is JsonArray -> toList()
-            is JsonObject -> value.map()
-            is JsonPrimitive -> when {
-                value.isString -> value.content
-                value.intOrNull != null -> value.int
-                value.doubleOrNull != null -> value.double
-                value.booleanOrNull != null -> value.boolean
-                else -> Unit
-            }
-        }
-    }
+open class ProcessedMarkdownFile(path: Path, val markdownTemplate: MarkdownTemplate) : MarkdownFile(path) {
+    var frontmatter: Map<String?, Any?> = emptyMap()
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun preprocessMarkdown(src: String): String {
-        if (!src.startsWith("---")) {
+        if (!src.startsWith("```")) {
             return src
         }
-        val nextSeparator = src.indexOf("---", 3)
+        val startIndex = if (src.startsWith("```yaml")) 7 else 3
+        val nextSeparator = src.indexOf("```", 3)
         if (nextSeparator == -1) {
             return src
         }
 
-        val frontmatterText =
-            '{' + src.substring(3, nextSeparator - 1).lines().filter { !it.isBlank() }.joinToString("\n") {
-                if (it.endsWith(",") || it.endsWith("{") || it.endsWith("[")) it else "$it,"
-            } + '}'
-
+        val frontmatterText = src.substring(startIndex, nextSeparator - 1)
         try {
-            frontmatter = Json {
-                isLenient = true
-                allowComments = true
-                allowTrailingComma = true
-            }.parseToJsonElement(frontmatterText).jsonObject.map()
-        } catch (e: Exception) {
-            // if only I could catch JSON-specific exceptions 😔
+            frontmatter = Yaml.decodeMapFromString(frontmatterText)
+        } catch (e: IllegalArgumentException) {
             err("Failed to parse frontmatter $frontmatterText. Reason: ${e.message}")
         }
 
-        return src.substring(nextSeparator + 3)
+        return src.substring(nextSeparator + 4)
     }
 
     override fun createHtml(src: String, tree: ASTNode, flavour: MarkdownFlavourDescriptor): String {
@@ -63,15 +42,17 @@ open class ProcessedMarkdownFile(path: Path, val markdownTemplate: MarkdownTempl
     }
 }
 
-private fun Any.asMap() = this as Map<*, *>
+fun Any.asMap() = this as Map<*, *>
+
+inline operator fun <K, reified O> Map<out Any?, *>?.get(key: K) = this?.get(key) as? O
 
 fun ProcessedMarkdownFile.ogMetadataTemplate(html: String): String {
     val meta = frontmatter["meta"]?.asMap()
-    val title = meta?.get("title") as? String
-    val description = meta?.get("description") as? String
-    val type = meta?.get("type") as? String ?: "website"
+    val title: String? = meta["title"]
+    val description: String? = meta["description"]
+    val type: String? = meta["type"]
 
-    //language=html
+    // language=html
     return """
 <!DOCTYPE HTML>
 <html>
@@ -92,5 +73,4 @@ ${html.prependIndent()}
 fun OutputPath.md(
     source: Path,
     markdownTemplate: MarkdownTemplate = this.markdownTemplate,
-) =
-    children.add(ProcessedMarkdownFile(source, markdownTemplate))
+) = children.add(ProcessedMarkdownFile(source, markdownTemplate))

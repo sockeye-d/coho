@@ -19,10 +19,11 @@ class RootPath(sourceDirectory: Source, buildPath: Path) : OutputPath("root", so
     }
 
     @OptIn(ExperimentalPathApi::class)
-    fun forceGenerate(location: Path = buildPath): Path {
-        location.deleteRecursively()
+    override fun generate(location: Path?): Path {
+        val realLocation = location ?: buildPath
+        realLocation.deleteRecursively()
         doneCount = 0
-        return generate(location)
+        return super.generate(realLocation)
     }
 
     @OptIn(ExperimentalAtomicApi::class)

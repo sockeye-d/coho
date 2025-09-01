@@ -4,7 +4,8 @@ import dev.fishies.coho.core.markdown.MarkdownTemplate
 import java.nio.file.Path
 import kotlin.io.path.createDirectory
 
-open class OutputPath(name: String, val source: Source, val buildPath: Path, var markdownTemplate: MarkdownTemplate) : Element(name) {
+open class OutputPath(name: String, val source: Source, val buildPath: Path, var markdownTemplate: MarkdownTemplate) :
+    Element(name) {
     val children = mutableListOf<Element>()
 
     override fun _generate(location: Path): List<Path> {
@@ -26,11 +27,13 @@ open class OutputPath(name: String, val source: Source, val buildPath: Path, var
         get() = children.size + 1
 }
 
-fun OutputPath.path(name: String, markdownTemplate: MarkdownTemplate = this.markdownTemplate, block: OutputPath.() -> Unit) =
-    children.add(OutputPath(name, source.cd(name), buildPath.resolve(name), markdownTemplate).apply { block() })
+fun OutputPath.path(
+    name: String, markdownTemplate: MarkdownTemplate = this.markdownTemplate, block: OutputPath.() -> Unit
+) = children.add(OutputPath(name, source.cd(name), buildPath.resolve(name), markdownTemplate).apply { block() })
 
-inline fun OutputPath.run(crossinline block: OutputPath.(location: Path) -> List<Path>) = children.add(object : Element("run") {
-    override fun _generate(location: Path): List<Path> {
-        return block(location)
-    }
-})
+inline fun OutputPath.run(name: String = "run", crossinline block: OutputPath.(location: Path) -> List<Path>) =
+    children.add(object : Element(name) {
+        override fun _generate(location: Path): List<Path> {
+            return block(location)
+        }
+    })
