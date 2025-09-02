@@ -1,6 +1,7 @@
 package dev.fishies.coho.cli
 
 import dev.fishies.coho.core.*
+import dev.fishies.coho.core.scripting.evalFile
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.netty.NettyApplicationEngine
 import kotlinx.cli.ArgParser
@@ -76,7 +77,7 @@ fun main(args: Array<String>) {
     note("Building...")
     val rebuildTimer = TimeSource.Monotonic.markNow()
     structure.generate(buildPath)
-    pos("Rebuild complete in ${rebuildTimer.elapsedNow()}")
+    pos("Build complete in ${rebuildTimer.elapsedNow()}")
     if (!useServer) {
         return
     }
@@ -102,12 +103,14 @@ fun main(args: Array<String>) {
     Runtime.getRuntime().addShutdownHook(stopServerHook)
 
     structure.watch(ignorePaths = setOf(buildPath), exit = watchExit) {
+        val evalTimer = TimeSource.Monotonic.markNow()
         try {
             structure = build(cohoScriptPath)
         } catch (e: ScriptException) {
             err("Failed to run script: ${e.message}")
             return@watch false
         }
+        pos("Evaluation complete in ${evalTimer.elapsedNow()}")
 
         if (structure == null) {
             return@watch false
@@ -168,19 +171,8 @@ private object PathArgType : ArgType<Path>(true) {
 }
 
 private fun build(ktsPath: Path): RootPath? {
-    val kts = ScriptEngineManager().getEngineByName("kotlin") ?: error("Kotlin script engine not found")
-    val structure: Any? = try {
-        if (ktsPath.extension == "kt") {
-            kts.eval(ktsPath.readText() + "\ngenerate()")
-        } else {
-            kts.eval(ktsPath.reader())
-        }
-    } catch (e: ScriptException) {
-        err("Failed to run script: ${e.message}")
-        return null
-    }
+    val structure = evalFile(ktsPath)
     if (structure !is RootPath) {
-        err("Script must define a root path")
         return null
     }
     return structure

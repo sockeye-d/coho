@@ -6,12 +6,8 @@ import kotlin.script.experimental.jvm.dependenciesFromCurrentContext
 import kotlin.script.experimental.jvm.jvm
 
 @KotlinScript(
-    displayName = "Coho script",
-    fileExtension = "coho.kts",
-    filePathPattern = "*.coho.kts",
-    compilationConfiguration = CohoScriptConfiguration::class
+    displayName = "Coho script", fileExtension = "coho.kts", compilationConfiguration = CohoScriptConfiguration::class
 )
-
 abstract class CohoScript
 
 @Suppress("JavaIoSerializableObjectMustHaveReadResolve")
