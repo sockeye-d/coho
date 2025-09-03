@@ -19,13 +19,7 @@ import kotlin.io.path.absolute
 const val RELOAD_JS = """
 const reload = new WebSocket("/reload");
 reload.addEventListener('message', event => {
-    console.log("reloading");
     location.reload();
-    // fetch(location.href).then(x => x.text()).then(text => {
-    //     document.open();
-    //     document.write(text);
-    //     document.close()
-    // });
 });
 """
 
@@ -33,6 +27,7 @@ private val endHtmlRegex = Regex("<\\s*?/\\s*?[hH][tT][mM][lL]\\s*?>")
 
 private fun injectReloadJs(html: String): String {
     val endHtmlIndex = endHtmlRegex.find(html)?.groups?.get(0)?.range?.start ?: return html
+    info("Injecting reload JS", verbose = true)
     // language=html
     return "${html.take(endHtmlIndex)}<script>$RELOAD_JS</script>${html.substring(endHtmlIndex)}"
 }
@@ -57,7 +52,6 @@ fun runLocalServer(buildPath: Path, reload: StateFlow<Int>, noReloadScript: Bool
             staticFiles("/", buildPath.absolute().toFile()) {
                 modify { file, call ->
                     if (file.extension == "html" && !noReloadScript) {
-                        info("Injecting reload JS into $file", verbose = true)
                         call.respondText(injectReloadJs(file.readText()), ContentType.Text.Html)
                     }
                 }

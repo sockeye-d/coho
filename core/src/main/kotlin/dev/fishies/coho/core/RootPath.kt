@@ -23,7 +23,12 @@ class RootPath(sourceDirectory: Source, buildPath: Path) : OutputPath("root", so
         val realLocation = location ?: buildPath
         realLocation.deleteRecursively()
         doneCount = 0
-        return super.generate(realLocation)
+        maxCount = count
+        val result = super.generate(realLocation)
+        if (doneCount < maxCount) {
+            maxCount = count
+        }
+        return result
     }
 
     @OptIn(ExperimentalAtomicApi::class)

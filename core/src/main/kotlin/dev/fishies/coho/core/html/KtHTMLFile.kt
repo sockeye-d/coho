@@ -1,39 +1,21 @@
 package dev.fishies.coho.core.html
 
-import dev.fishies.coho.core.Element
-import dev.fishies.coho.core.OutputPath
-import dev.fishies.coho.core.err
+import dev.fishies.coho.core.*
 import dev.fishies.coho.core.html.KtHTMLFile.Companion.globalContext
-import dev.fishies.coho.core.html.runScript
-import dev.fishies.coho.core.info
+import dev.fishies.coho.core.scripting.eval
 import java.nio.file.Path
-import javax.script.ScriptContext
-import javax.script.ScriptEngineManager
-import javax.script.SimpleBindings
-import kotlin.collections.component1
-import kotlin.collections.component2
-import kotlin.collections.contains
-import kotlin.collections.iterator
-import kotlin.io.path.name
-import kotlin.io.path.readText
-import kotlin.io.path.writeText
+import kotlin.io.path.*
 
 private fun String.substr(startIndex: Int, endIndex: Int) =
     if (endIndex < 0) substring(startIndex) else substring(startIndex, endIndex)
 
-fun runScript(kts: String, context: Map<String, Any>): String {
+fun runScript(kts: String, context: Map<String, Any>, name: String? = null): String {
     val fullContext = context + globalContext
     if (kts.trim() in fullContext) {
         info("Simple replacement detected on $kts, not evaluating", verbose = true)
         return fullContext[kts.trim()].toString()
     }
-    val scriptEngine = ScriptEngineManager().getEngineByName("kotlin")!!
-    val bindings = SimpleBindings()
-    for ((key, value) in fullContext) {
-        bindings[key] = value
-    }
-    scriptEngine.setBindings(bindings, ScriptContext.ENGINE_SCOPE)
-    return scriptEngine.eval(kts).toString()
+    return eval(kts, fullContext, name).toString()
 }
 
 fun templateHtml(html: String, onErrorAction: () -> Unit, templateAction: (String) -> String): String {
@@ -67,14 +49,11 @@ class KtHTMLFile(val path: Path, val context: Map<String, Any>) : Element(path.n
 
     override fun _generate(location: Path): List<Path> = listOf(location.resolve(name).apply {
         writeText(templateHtml(path.readText(), { err("No closing tag found in file $path") }) {
-            runScript(it, context)
+            runScript(it, context, path.toString())
         })
     })
 
-    override fun toString() = "$name (${this::class.simpleName} $path)"
-
     companion object {
-        private val engineManager = ScriptEngineManager()
         var globalContext: Map<String, Any> = emptyMap()
     }
 }

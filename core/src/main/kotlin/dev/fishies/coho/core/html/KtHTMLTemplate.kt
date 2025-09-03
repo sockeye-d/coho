@@ -10,11 +10,11 @@ fun ktHtmlTemplate(
     context: Map<String, Any> = emptyMap(),
 ): (html: String) -> String = { innerHtml ->
     templateHtml(source.readText(), { err("No closing tag found in file $source") }) {
-        runScript(it, context + mapOf(contentKey to innerHtml))
+        runScript(it, context + mapOf(contentKey to innerHtml), source.toString())
     }
 }
 
 fun ktTemplate(source: Path, context: Map<String, Any> = emptyMap()) =
     templateHtml(source.readText(), { err("No closing tag found in file $source") }) {
-        runScript(it, context)
+        runScript(it, context, source.toString())
     }

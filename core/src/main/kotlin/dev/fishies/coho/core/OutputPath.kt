@@ -17,14 +17,14 @@ open class OutputPath(name: String, val source: Source, val buildPath: Path, var
         return emptyList()
     }
 
-    override fun toString() = "$name (${this::class.simpleName})\n${children.joinToString("\n").prependIndent()}"
+    override fun toString() = "${super.toString()}\n${children.sortedBy { executionTime }.joinToString("\n").prependIndent()}"
 
     operator fun String.unaryPlus() = source.path(this)
     fun src(path: String) = source.path(path)
     fun build(path: String): Path = buildPath.resolve(path)
 
     override val count: Int
-        get() = children.size + 1
+        get() = children.sumOf { it.count }
 }
 
 fun OutputPath.path(

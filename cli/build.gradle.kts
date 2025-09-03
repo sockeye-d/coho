@@ -8,7 +8,7 @@ plugins {
 
 dependencies {
     implementation(libs.stdlib)
-    implementation(libs.bundles.kts)
+    implementation(libs.reflect)
     implementation(libs.bundles.ktor)
     implementation(libs.ktx.cli)
 
@@ -25,7 +25,10 @@ application {
 }
 
 tasks.shadowJar {
+    // minimize {
+    //     libs.bundles.kts.map { include(dependency(it)) }
+    // }
     minimize {
-        include(dependency(libs.scripting.kt.jsr233))
+        include(dependency(libs.reflect))
     }
 }

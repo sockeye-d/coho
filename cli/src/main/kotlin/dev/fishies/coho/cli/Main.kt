@@ -1,26 +1,22 @@
 package dev.fishies.coho.cli
 
 import dev.fishies.coho.core.*
-import dev.fishies.coho.core.scripting.evalFile
-import io.ktor.server.engine.EmbeddedServer
-import io.ktor.server.netty.NettyApplicationEngine
-import kotlinx.cli.ArgParser
-import kotlinx.cli.ArgType
-import kotlinx.cli.ExperimentalCli
-import kotlinx.cli.default
+import dev.fishies.coho.core.scripting.eval
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import kotlinx.cli.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.net.BindException
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
-import javax.script.ScriptEngineManager
-import javax.script.ScriptException
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.thread
 import kotlin.io.path.*
-import kotlin.jvm.java
+import kotlin.system.exitProcess
 import kotlin.time.TimeSource
+import kotlin.time.measureTime
 
 @OptIn(ExperimentalCli::class, ExperimentalPathApi::class, ExperimentalAtomicApi::class)
 fun main(args: Array<String>) {
@@ -31,27 +27,35 @@ fun main(args: Array<String>) {
     val buildPath by parser.option(
         PathArgType, "build-path", description = "Path to the build directory", shortName = "B"
     ).default(Paths.get("build"))
-    val useServer by parser.option(
-        ArgType.Boolean, "serve", description = "Show a live-updating localhost webserver", shortName = "s"
-    ).default(false)
-    val serverPort by parser.option(ArgType.Int, "server-port", description = "Integrated server port", shortName = "p")
-        .default(8080)
-    val portRetryCount by parser.option(
-        ArgType.Int,
-        "port-retry-count",
-        description = "How many times to try different ports if the current port is already in use (default: infinite)"
-    )
-    val noReloadScript by parser.option(
-        ArgType.Boolean,
-        "no-reload-script",
-        description = "Don't inject the hot reload script into HTML files (only when using integrated server, it's never included in build outputs)"
-    ).default(false)
     val verbose by parser.option(ArgType.Boolean, "verbose", "v", "Show extra information").default(false)
     val force by parser.option(
         ArgType.Boolean, "force", "f", "Force overwrite existing files to create a new coho project"
     ).default(false)
     val create by parser.option(ArgType.Boolean, "create", description = "Create a new coho script file").default(false)
     val noProgress by parser.option(ArgType.Boolean, "no-progress", description = "Don't show progress").default(false)
+    val debugTimes by parser.option(ArgType.Boolean, "show-execution-times", description = "Show execution times")
+        .default(false)
+    var useServer = false
+    val serve = object : Subcommand("serve", "Show a live-updating localhost webserver") {
+        val serverPort by option(
+            ArgType.Int, "server-port", description = "Integrated server port", shortName = "p"
+        ).default(8080)
+        val portRetryCount by option(
+            ArgType.Int,
+            "port-retry-count",
+            description = "How many times to try different ports if the current port is already in use (default: infinite)"
+        )
+        val noReloadScript by option(
+            ArgType.Boolean,
+            "no-reload-script",
+            description = "Don't inject the hot reload script into HTML files (only when using integrated server, it's never included in build outputs)"
+        ).default(false)
+
+        override fun execute() {
+            useServer = true
+        }
+    }
+    parser.subcommands(serve)
     parser.parse(args)
     ANSI.showVerbose = verbose
     Element.showProgress = !noProgress
@@ -75,9 +79,10 @@ fun main(args: Array<String>) {
     pos("Evaluation complete in ${evalTimer.elapsedNow()}")
 
     note("Building...")
-    val rebuildTimer = TimeSource.Monotonic.markNow()
-    structure.generate(buildPath)
-    pos("Build complete in ${rebuildTimer.elapsedNow()}")
+    pos("Build complete in ${measureTime { structure.generate(buildPath) }}")
+    if (debugTimes) {
+        info(structure.toString())
+    }
     if (!useServer) {
         return
     }
@@ -85,14 +90,14 @@ fun main(args: Array<String>) {
     note("Starting server...")
 
     val reload = MutableStateFlow(0)
-    val server = findServerPort(portRetryCount, serverPort, buildPath, reload, noReloadScript)
+    val server = findServerPort(serve.portRetryCount, serve.serverPort, buildPath, reload, serve.noReloadScript)
 
     if (server == null) {
         err("All attempted ports were already in use")
         return
     }
 
-    if (!noReloadScript) {
+    if (!serve.noReloadScript) {
         note("Hot reload is active")
     }
 
@@ -103,36 +108,41 @@ fun main(args: Array<String>) {
     Runtime.getRuntime().addShutdownHook(stopServerHook)
 
     structure.watch(ignorePaths = setOf(buildPath), exit = watchExit) {
-        val evalTimer = TimeSource.Monotonic.markNow()
-        try {
-            structure = build(cohoScriptPath)
-        } catch (e: ScriptException) {
-            err("Failed to run script: ${e.message}")
-            return@watch false
-        }
-        pos("Evaluation complete in ${evalTimer.elapsedNow()}")
-
-        if (structure == null) {
-            return@watch false
-        }
-
+        var structure: RootPath? = null
         val tempBuildPath = createTempDirectory("coho-build-${buildPath.name}")
         RootPath.rootBuildPath = tempBuildPath
-        val tempDir = attempt({ structure!!.generate(tempBuildPath) }) { ex: Exception ->
+        pos(
+            "Evaluation complete in ${
+            measureTime {
+                structure = build(cohoScriptPath)
+            }
+        }")
+
+        if (structure == null) {
+            tempBuildPath.deleteRecursively()
+            return@watch false
+        }
+
+        // """atomic operations"""
+        val result = attempt({ structure.generate(tempBuildPath) }) { ex: Exception ->
             err("Failed to generate file ${ex.message} (${ex::class.simpleName})")
             tempBuildPath.deleteRecursively()
             return@watch false
         }
-        if (tempDir == null) {
+        if (debugTimes) {
+            info(structure.toString())
+        }
+        if (result == null) {
             tempBuildPath.deleteRecursively()
             return@watch false
         }
         buildPath.deleteRecursively()
-        tempDir.copyToRecursively(buildPath, followLinks = true, overwrite = true)
-        tempDir.deleteRecursively()
+        tempBuildPath.copyToRecursively(buildPath, followLinks = true, overwrite = true)
+        tempBuildPath.deleteRecursively()
         reload.value++
         true
     }
+
     info("Stopping server")
     try {
         server.stop(500, 500, TimeUnit.MILLISECONDS)
@@ -141,7 +151,7 @@ fun main(args: Array<String>) {
         return
     }
     pos("Server stopped")
-    Runtime.getRuntime().halt(0)
+    exitProcess(0)
 }
 
 private fun findServerPort(
@@ -171,7 +181,7 @@ private object PathArgType : ArgType<Path>(true) {
 }
 
 private fun build(ktsPath: Path): RootPath? {
-    val structure = evalFile(ktsPath)
+    val structure = eval(ktsPath)
     if (structure !is RootPath) {
         return null
     }

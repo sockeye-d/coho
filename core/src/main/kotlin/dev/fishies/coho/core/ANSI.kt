@@ -5,15 +5,15 @@ import dev.fishies.coho.core.ANSI.showVerbose
 
 enum class Color(val code: Int) {
     Black(30),
-    Red(31),
+    RED(31),
     Green(32),
-    Yellow(33),
-    Blue(34),
-    Magenta(35),
+    YELLOW(33),
+    BLUE(34),
+    MAGENTA(35),
     Cyan(36),
-    White(37),
-    Default(39),
-    Reset(0),
+    WHITE(37),
+    DEFAULT(39),
+    RESET(0),
 }
 
 enum class Direction(val code: Char) {
@@ -38,10 +38,10 @@ fun bg(color: Color) = if (noColor) "" else "$ESC[${color.code + 10}m"
 // u"%1[%2%3"_s.arg(esc).arg(count).arg(QString(static_cast<char>(direction)))
 fun move(direction: Direction, distance: Int = 1) = "$ESC[$distance${direction.code}"
 
-val ERROR = "${fg(Color.Red)}error:$RESET"
-val INFO = "${RESET}info:$RESET"
-val NOTE = "${fg(Color.Yellow)}note:$RESET"
-val POSITIVE = "${fg(Color.Green)}success:$RESET"
+val ERROR = "${fg(Color.RED)}error:${RESET}"
+val INFO = "${RESET}info:${RESET}"
+val NOTE = "${fg(Color.YELLOW)}note:${RESET}"
+val POSITIVE = "${fg(Color.Green)}success:${RESET}"
 
 fun err(string: String, verbose: Boolean = false, lineEnding: String = "\n") =
     if (showVerbose || !verbose) System.err.print(string.prependIndent("$ERROR ") + lineEnding) else Unit

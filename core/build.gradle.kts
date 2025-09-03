@@ -6,6 +6,7 @@ plugins {
 
 dependencies {
     implementation(libs.stdlib)
+    implementation(libs.reflect)
     implementation(libs.bundles.kts)
     implementation(libs.markdown)
     implementation(libs.ktx.yaml)

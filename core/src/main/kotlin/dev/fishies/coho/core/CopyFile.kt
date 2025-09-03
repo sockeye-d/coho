@@ -6,8 +6,6 @@ import kotlin.io.path.name
 
 open class CopyFile(val path: Path) : Element(path.name) {
     override fun _generate(location: Path): List<Path> = listOf(location.resolve(name).also { path.copyTo(it) })
-
-    override fun toString() = "$name (${this::class.simpleName} $path)"
 }
 
 fun OutputPath.cp(source: Path) = children.add(CopyFile(source))

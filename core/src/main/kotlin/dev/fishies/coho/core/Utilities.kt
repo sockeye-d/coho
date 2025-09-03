@@ -3,6 +3,8 @@ package dev.fishies.coho.core
 import java.nio.file.Path
 import kotlin.io.path.absolute
 import kotlin.io.path.pathString
+import kotlin.time.Duration
+import kotlin.time.TimeSource
 
 fun OutputPath.exec(executable: String, vararg arguments: Any, workingDirectory: Path? = null): String {
     val proc = ProcessBuilder().directory((workingDirectory ?: source.sourcePath).toFile())

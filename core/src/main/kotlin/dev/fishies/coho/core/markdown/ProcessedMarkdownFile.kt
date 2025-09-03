@@ -6,13 +6,26 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import net.mamoe.yamlkt.Yaml
 import org.intellij.markdown.ast.ASTNode
 import org.intellij.markdown.flavours.MarkdownFlavourDescriptor
+import org.intellij.markdown.html.AttributesCustomizer
 import org.intellij.markdown.html.HtmlGenerator
 import java.nio.file.Path
 import kotlin.collections.get
 
 typealias MarkdownTemplate = ProcessedMarkdownFile.(html: String) -> String
 
-open class ProcessedMarkdownFile(path: Path, val markdownTemplate: MarkdownTemplate) : MarkdownFile(path) {
+private val hrefFixingRegex = Regex("href=\"([^\"]+)\\.md\"")
+
+fun hrefFixingAttributesCustomizer(
+    node: ASTNode, tagName: CharSequence, attributes: Iterable<CharSequence?>
+) = if (tagName == "a") attributes.map { it?.replace(hrefFixingRegex, $$"href=\"$1.html\"") } else attributes
+
+open class ProcessedMarkdownFile(
+    path: Path,
+    val markdownTemplate: MarkdownTemplate,
+    attributesCustomizer: AttributesCustomizer
+) : MarkdownFile(
+    path, HtmlGenerator.DefaultTagRenderer(attributesCustomizer, false)
+) {
     var frontmatter: Map<String?, Any?> = emptyMap()
 
     @OptIn(ExperimentalSerializationApi::class)
@@ -37,7 +50,7 @@ open class ProcessedMarkdownFile(path: Path, val markdownTemplate: MarkdownTempl
     }
 
     override fun createHtml(src: String, tree: ASTNode, flavour: MarkdownFlavourDescriptor): String {
-        val html = HtmlGenerator(src, tree, flavour).generateHtml()
+        val html = HtmlGenerator(src, tree, flavour).generateHtml(tagRenderer)
         return markdownTemplate(html)
     }
 }
@@ -73,4 +86,5 @@ ${html.prependIndent()}
 fun OutputPath.md(
     source: Path,
     markdownTemplate: MarkdownTemplate = this.markdownTemplate,
-) = children.add(ProcessedMarkdownFile(source, markdownTemplate))
+    attributesCustomizer: AttributesCustomizer = ::hrefFixingAttributesCustomizer,
+) = children.add(ProcessedMarkdownFile(source, markdownTemplate, attributesCustomizer))
