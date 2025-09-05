@@ -18,6 +18,7 @@ class ShellElement(
                 }
             }.toTypedArray())
                 .redirectOutput(if (showProgress && showStdOut) ProcessBuilder.Redirect.INHERIT else ProcessBuilder.Redirect.DISCARD)
+                .redirectError(ProcessBuilder.Redirect.INHERIT)
                 .start()!!
         val err = proc.waitFor()
         if (err != 0) {
