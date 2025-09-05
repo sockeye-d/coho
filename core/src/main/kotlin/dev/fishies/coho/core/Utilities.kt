@@ -1,5 +1,6 @@
 package dev.fishies.coho.core
 
+import org.apache.commons.text.StringEscapeUtils
 import java.nio.file.Path
 import kotlin.io.path.absolute
 import kotlin.io.path.pathString
@@ -41,3 +42,9 @@ fun exec(executable: String, vararg arguments: String, workingDirectory: Path? =
     }
     return proc.inputReader().readText()
 }
+
+fun String.escapeHtml(): String = StringEscapeUtils.escapeHtml4(this)
+fun String.escapeXml(): String = StringEscapeUtils.escapeXml11(this)
+
+fun String.unescapeHtml(): String = StringEscapeUtils.unescapeHtml4(this)
+fun String.unescapeXml(): String = StringEscapeUtils.unescapeXml(this)

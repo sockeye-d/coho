@@ -2,6 +2,7 @@ val jvmTarget: String by project
 
 plugins {
     kotlin("jvm") apply true
+    kotlin("kapt")
 }
 
 dependencies {
@@ -12,6 +13,8 @@ dependencies {
     implementation(libs.ktx.yaml)
     implementation(libs.ktx.coroutines.core)
     implementation(libs.prism4j)
+    implementation(libs.commonstext)
+    kapt(libs.prism4j.bundler)
 }
 
 kotlin {
