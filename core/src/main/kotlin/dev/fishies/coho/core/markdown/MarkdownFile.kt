@@ -4,6 +4,7 @@ import dev.fishies.coho.core.*
 import io.noties.prism4j.AbsVisitor
 import io.noties.prism4j.Prism4j
 import io.noties.prism4j.Prism4j.grammar
+import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle
 import org.apache.commons.text.StringEscapeUtils
 import org.intellij.markdown.*
 import org.intellij.markdown.ast.ASTNode
@@ -66,29 +67,8 @@ private class SyntaxHighlightedCommonMarkFlavourDescriptor(
                             state = 1
                         }
                     }
-                    val grammar = language?.run { prism4j.grammar(this) }
-                    if (grammar != null) {
-
-                        val tokens = prism4j.tokenize(content.toString(), grammar)
-                        val tokenVisitor: AbsVisitor = object : AbsVisitor() {
-                            override fun visitText(text: Prism4j.Text) { // raw text
-                                visitor.consumeHtml("<span class=\"code-text code-$language-text\">${text.literal().escapeHtml()}</span>")
-                            }
-
-                            override fun visitSyntax(syntax: Prism4j.Syntax) { // type of the syntax token
-                                val firstChild = syntax.children().first()
-                                if (syntax.children().size == 1 && firstChild is Prism4j.Text) {
-                                    val inner = firstChild.literal().escapeHtml()
-                                    visitor.consumeHtml("<span class=\"code-${syntax.type()} code-$language-${syntax.type()}\">$inner</span>")
-                                } else {
-                                    visit(syntax.children())
-                                }
-                            }
-                        }
-                        tokenVisitor.visit(tokens)
-                    } else {
-                        visitor.consumeHtml(content.toString().escapeHtml())
-                    }
+                    val highlighted = language?.run { content.toString().highlight(this) }
+                    visitor.consumeHtml(highlighted ?: content.toString().escapeHtml())
 
                     if (state == 0) {
                         visitor.consumeTagOpen(node, "code", *attributes.toTypedArray())
