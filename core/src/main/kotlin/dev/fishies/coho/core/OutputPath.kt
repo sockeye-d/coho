@@ -1,9 +1,18 @@
 package dev.fishies.coho.core
 
+import dev.fishies.coho.core.html.html
 import dev.fishies.coho.core.markdown.MarkdownTemplate
+import dev.fishies.coho.core.markdown.md
 import java.nio.file.Path
 import kotlin.io.path.createDirectory
 
+/**
+ * Represents a subdirectory in the output directory.
+ *
+ * Arbitrary [Element]s,
+ * like [md] and [html], can be nested within an
+ * [OutputPath] to specify the contents of that directory.
+ */
 open class OutputPath(name: String, val source: Source, val buildPath: Path, var markdownTemplate: MarkdownTemplate) :
     Element(name) {
     val children = mutableListOf<Element>()
@@ -17,7 +26,8 @@ open class OutputPath(name: String, val source: Source, val buildPath: Path, var
         return emptyList()
     }
 
-    override fun toString() = "${super.toString()}\n${children.sortedBy { executionTime }.joinToString("\n").prependIndent()}"
+    override fun toString() =
+        "${super.toString()}\n${children.sortedBy { executionTime }.joinToString("\n").prependIndent()}"
 
     operator fun String.unaryPlus() = source.path(this)
     fun src(path: String) = source.path(path)
@@ -27,11 +37,21 @@ open class OutputPath(name: String, val source: Source, val buildPath: Path, var
         get() = children.sumOf { it.count }
 }
 
+/**
+ * Represents a subdirectory in the output directory.
+ *
+ * Arbitrary [Element]s,
+ * like [md] and [html], can be nested within an
+ * [OutputPath] to specify the contents of that directory.
+ */
 fun OutputPath.path(
     name: String, markdownTemplate: MarkdownTemplate = this.markdownTemplate, block: OutputPath.() -> Unit
 ) = children.add(OutputPath(name, source.cd(name), buildPath.resolve(name), markdownTemplate).apply { block() })
 
-inline fun OutputPath.run(name: String = "run", crossinline block: OutputPath.(location: Path) -> List<Path>) =
+/**
+ * Run [block] at build time.
+ */
+fun OutputPath.run(name: String = "run", block: OutputPath.(location: Path) -> List<Path>) =
     children.add(object : Element(name) {
         override fun _generate(location: Path): List<Path> {
             return block(location)

@@ -29,6 +29,10 @@ open class MarkdownFile(val path: Path, val tagRenderer: HtmlGenerator.TagRender
     }
 }
 
+/**
+ * Convert a Markdown file to an HTML body directly with no templating or other post-processing.
+ * You likely don't want this one, use [md] for more flexibility.
+ */
 fun OutputPath.mdBasic(source: Path) = children.add(
     MarkdownFile(
         source, HtmlGenerator.DefaultTagRenderer(

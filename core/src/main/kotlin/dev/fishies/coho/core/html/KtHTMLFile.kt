@@ -9,7 +9,7 @@ import kotlin.io.path.*
 private fun String.substr(startIndex: Int, endIndex: Int) =
     if (endIndex < 0) substring(startIndex) else substring(startIndex, endIndex)
 
-fun runScript(kts: String, context: Map<String, Any>, name: String? = null): String {
+fun runScript(kts: String, context: Map<String, Any?>, name: String? = null): String {
     val fullContext = context + globalContext
     if (kts.trim() in fullContext) {
         info("Simple replacement detected on $kts, not evaluating", verbose = true)
@@ -45,7 +45,7 @@ fun templateHtml(html: String, onErrorAction: () -> Unit, templateAction: (Strin
     return builder.toString()
 }
 
-class KtHTMLFile(val path: Path, val context: Map<String, Any>) : Element(path.name) {
+class KtHTMLFile(val path: Path, val context: Map<String, Any?>) : Element(path.name) {
 
     override fun _generate(location: Path): List<Path> = listOf(location.resolve(name).apply {
         writeText(templateHtml(path.readText(), { err("No closing tag found in file $path") }) {
@@ -54,8 +54,8 @@ class KtHTMLFile(val path: Path, val context: Map<String, Any>) : Element(path.n
     })
 
     companion object {
-        var globalContext: Map<String, Any> = emptyMap()
+        var globalContext: Map<String, Any?> = emptyMap()
     }
 }
 
-fun OutputPath.ktHtml(source: Path, context: Map<String, Any> = emptyMap()) = children.add(KtHTMLFile(source, context))
+fun OutputPath.ktHtml(source: Path, context: Map<String, Any?> = emptyMap()) = children.add(KtHTMLFile(source, context))

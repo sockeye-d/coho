@@ -2,14 +2,12 @@ package dev.fishies.coho.core.markdown
 
 import dev.fishies.coho.core.OutputPath
 import dev.fishies.coho.core.err
-import kotlinx.serialization.ExperimentalSerializationApi
 import net.mamoe.yamlkt.Yaml
 import org.intellij.markdown.ast.ASTNode
 import org.intellij.markdown.flavours.MarkdownFlavourDescriptor
 import org.intellij.markdown.html.AttributesCustomizer
 import org.intellij.markdown.html.HtmlGenerator
 import java.nio.file.Path
-import kotlin.collections.get
 
 typealias MarkdownTemplate = ProcessedMarkdownFile.(html: String) -> String
 
@@ -20,15 +18,28 @@ fun hrefFixingAttributesCustomizer(
 ) = if (tagName == "a") attributes.map { it?.replace(hrefFixingRegex, $$"href=\"$1.html\"") } else attributes
 
 open class ProcessedMarkdownFile(
-    path: Path,
-    val markdownTemplate: MarkdownTemplate,
-    attributesCustomizer: AttributesCustomizer
+    path: Path, val markdownTemplate: MarkdownTemplate, attributesCustomizer: AttributesCustomizer
 ) : MarkdownFile(
     path, HtmlGenerator.DefaultTagRenderer(attributesCustomizer, false)
 ) {
+    /**
+     * The 'frontmatter' of the Markdown document; e.g., the section that comes before the content:
+     *
+     * ````md
+     * ```yaml
+     * meta:
+     *   title: a good title
+     * ```
+     *
+     * # Page
+     *
+     * content
+     * ````
+     *
+     * It's always parsed as YAML, although the codeblock only optionally includes the `yaml` language specifier.
+     */
     var frontmatter: Map<String?, Any?> = emptyMap()
 
-    @OptIn(ExperimentalSerializationApi::class)
     override fun preprocessMarkdown(src: String): String {
         if (!src.startsWith("```")) {
             return src
@@ -57,15 +68,17 @@ open class ProcessedMarkdownFile(
 
 fun Any.asMap() = this as Map<*, *>
 
-inline operator fun <K, reified O> Map<out Any?, *>?.get(key: K) = this?.get(key) as? O
-
+/**
+ * A default template for [md] that adds [OpenGraph](https://ogp.me/) [`meta`](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/meta)
+ * tags to the HTML.
+ */
 fun ProcessedMarkdownFile.ogMetadataTemplate(html: String): String {
     val meta = frontmatter["meta"]?.asMap()
-    val title: String? = meta["title"]
-    val description: String? = meta["description"]
-    val type: String? = meta["type"]
+    val title: String? = meta?.get("title") as? String
+    val description: String? = meta?.get("description") as? String
+    val type: String? = meta?.get("type") as? String
 
-    // language=html
+    frontmatter["meta"] // language=html
     return """
 <!DOCTYPE HTML>
 <html>
@@ -83,6 +96,13 @@ ${html.prependIndent()}
     """.trimIndent()
 }
 
+/**
+ * Convert a Markdown file to an HTML body with the given template and attribute customizer.
+ *
+ * [MarkdownTemplate]s are functions that accept the HTML output of the Markdown parser and return more HTML.
+ * It also includes the context of the [ProcessedMarkdownFile],
+ * including [ProcessedMarkdownFile.frontmatter].
+ */
 fun OutputPath.md(
     source: Path,
     markdownTemplate: MarkdownTemplate = this.markdownTemplate,

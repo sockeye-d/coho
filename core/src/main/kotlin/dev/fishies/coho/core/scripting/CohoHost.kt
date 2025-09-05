@@ -1,25 +1,13 @@
 package dev.fishies.coho.core.scripting
 
-import dev.fishies.coho.core.Color
-import dev.fishies.coho.core.RESET
-import dev.fishies.coho.core.err
-import dev.fishies.coho.core.fg
-import dev.fishies.coho.core.info
-import dev.fishies.coho.core.note
+import dev.fishies.coho.core.*
 import java.nio.file.Path
-import kotlin.script.experimental.api.EvaluationResult
-import kotlin.script.experimental.api.KotlinType
-import kotlin.script.experimental.api.ResultValue
-import kotlin.script.experimental.api.ResultWithDiagnostics
-import kotlin.script.experimental.api.ScriptDiagnostic
-import kotlin.script.experimental.api.ScriptEvaluationConfiguration
-import kotlin.script.experimental.api.SourceCode
-import kotlin.script.experimental.api.providedProperties
+import kotlin.script.experimental.api.*
 import kotlin.script.experimental.host.toScriptSource
 import kotlin.script.experimental.jvmhost.BasicJvmScriptingHost
 import kotlin.script.experimental.jvmhost.createJvmCompilationConfigurationFromTemplate
 
-val ScriptDiagnostic.Severity.color
+val ScriptDiagnostic.Severity.fgColor
     get() = when (this) {
         ScriptDiagnostic.Severity.DEBUG -> Color.DEFAULT
         ScriptDiagnostic.Severity.INFO -> Color.DEFAULT
@@ -43,12 +31,14 @@ private fun formatDiagnostic(sourceCode: SourceCode, diagnostic: ScriptDiagnosti
         val prefix = "$scriptLabel@${location.start.line}:${location.start.col}: "
         printer("$prefix$trimmedLine")
         val end = location.end
+        val spacing = " ".repeat(prefix.length + column - shift - 1)
         if (end == null || end.line != location.start.line) {
-            printer("${" ".repeat(prefix.length + column - 1 - shift)}╰ $message")
+            printer("$spacing^ $message")
         } else {
-            val width = (end.col - location.start.col)
-            // printer("${" ".repeat(prefix.length + column - 1 - shift)}${fg(Color.Red)}${"─".repeat(width - 1)}╮$RESET")
-            // printer("${" ".repeat(prefix.length + column - 2 - shift + width)}${fg(Color.Red)}╰$RESET $message")
+            val width = end.col - location.start.col
+
+            // error marking graveyard kept for posterity
+            // printer("${" ".repeat(prefix.length + column - 1 - shift)}${fg(Color.Red)}${"─".repeat(width - 1)}╮$RESET") // printer("${" ".repeat(prefix.length + column - 2 - shift + width)}${fg(Color.Red)}╰$RESET $message")
 
             // printer("${" ".repeat(prefix.length + column - 1 - shift)}${fg(Color.Red)}${"─".repeat(floor(width / 2.0).toInt())}┬${"─".repeat(ceil(width / 2.0).toInt() - 1)}$RESET")
             // printer("${" ".repeat(prefix.length + column - 1 - shift + width / 2)}${fg(Color.Red)}╰$RESET $message")
@@ -62,7 +52,9 @@ private fun formatDiagnostic(sourceCode: SourceCode, diagnostic: ScriptDiagnosti
             //     printer("${" ".repeat(prefix.length + column - 1 - shift)}${fg(Color.Red)}^$RESET $message")
             // }
 
-            printer("${" ".repeat(prefix.length + column - 1 - shift)}${fg(diagnostic.severity.color)}${"^".repeat(width)}${RESET} $message")
+            // printer("${" ".repeat(prefix.length + column - 1 - shift)}${fg(diagnostic.severity.color)}${"^".repeat(width)}${RESET} $message")
+
+            printer("$spacing${fg(diagnostic.severity.fgColor)}^${"~".repeat(width - 1)}${RESET} $message")
         }
     }
 
@@ -101,7 +93,7 @@ private fun evalSource(source: SourceCode, context: Map<String, Any?>): Any? {
         is ResultWithDiagnostics.Success<EvaluationResult> -> when (result.value.returnValue) {
             ResultValue.NotEvaluated -> null
             is ResultValue.Error -> {
-                err("Evaluation resulted in error ${(result.value.returnValue as ResultValue.Error).error}")
+                err("Evaluation resulted in error ${result.value.returnValue}")
                 null
             }
 

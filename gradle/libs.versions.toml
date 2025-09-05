@@ -21,6 +21,8 @@ ktor-server-netty = { group = "io.ktor", name = "ktor-server-netty", version.ref
 ktor-server-websockets = { group = "io.ktor", name = "ktor-server-websockets", version.ref = "ktor-server"}
 ktor-server-slf4j-nop = "org.slf4j:slf4j-nop:2.0.17"
 
+prism4j = "io.noties:prism4j:2.0.0"
+
 [bundles]
 kts = [
     "scripting-kt-common",

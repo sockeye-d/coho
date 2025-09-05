@@ -3,7 +3,6 @@ package dev.fishies.coho.core
 import java.nio.file.Path
 import java.nio.file.StandardWatchEventKinds.*
 import java.nio.file.WatchKey
-import java.nio.file.WatchService
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.io.path.*
@@ -113,18 +112,19 @@ class RootPath(sourceDirectory: Source, buildPath: Path) : OutputPath("root", so
         watcher.close()
     }
 
-    private inline fun WatchService.getKey(elseBlock: () -> Nothing): WatchKey {
-        try {
-            return take()
-        } catch (_: InterruptedException) {
-            elseBlock()
-        }
-    }
-
     companion object {
         lateinit var rootBuildPath: Path
     }
 }
 
+/**
+ * Represents the root directory.
+ * Use [path] to define subdirectories.
+ */
 fun root(sourceDirectory: Source, block: RootPath.() -> Unit) = RootPath(sourceDirectory, RootPath.rootBuildPath).apply { block() }
+
+/**
+ * Represents the root directory.
+ * Use [path] to define subdirectories.
+ */
 fun root(sourceDirectory: String = ".", block: RootPath.() -> Unit) = root(Source(sourceDirectory), block)

@@ -29,6 +29,9 @@ class ShellElement(
     override val count = 0
 }
 
+/**
+ * Run an executable at build time in the build directory with the given arguments.
+ */
 fun OutputPath.shell(
     executable: String, vararg arguments: Any, workingDirectory: Path = buildPath, showStdOut: Boolean = true
 ) = children.add(ShellElement(executable, workingDirectory, arguments.toList(), showStdOut))

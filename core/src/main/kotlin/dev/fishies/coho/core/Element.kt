@@ -6,7 +6,14 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.measureTimedValue
 
+/**
+ * The base output element type, representing a single file in the output directory.
+ * Subclasses must implement [_generate] to specify how that file should be generated.
+ */
 abstract class Element(val name: String) {
+    /**
+     * @return A list of the files generated, for progress reports.
+     */
     protected abstract fun _generate(location: Path): List<Path>
     var executionTime: Duration? = null
 
@@ -20,7 +27,8 @@ abstract class Element(val name: String) {
             }
             info("generated $it", verbose = true)
             if (showProgress) {
-                info("[${(doneCount * 100 / maxCount).coerceIn(0..100).toString().padStart(3, ' ')}%] ${it.name}")
+                val percentage = "[${(doneCount * 100 / maxCount).coerceIn(0..100).toString().padStart(3, ' ')}%]"
+                info("$percentage ${RootPath.rootBuildPath.relativize(it)}")
             }
         }
         executionTime = time
@@ -36,6 +44,7 @@ abstract class Element(val name: String) {
         in 100.milliseconds..Duration.INFINITE -> fg(Color.RED)
         else -> fg(Color.Cyan)
     }
+
     protected val prefix
         get() = if (executionTime != null) "${executionTime.color()}(${executionTime})${RESET} " else ""
 

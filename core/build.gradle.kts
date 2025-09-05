@@ -11,6 +11,7 @@ dependencies {
     implementation(libs.markdown)
     implementation(libs.ktx.yaml)
     implementation(libs.ktx.coroutines.core)
+    implementation(libs.prism4j)
 }
 
 kotlin {

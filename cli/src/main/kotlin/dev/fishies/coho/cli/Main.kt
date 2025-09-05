@@ -21,9 +21,9 @@ import kotlin.time.measureTime
 @OptIn(ExperimentalCli::class, ExperimentalPathApi::class, ExperimentalAtomicApi::class)
 fun main(args: Array<String>) {
     val parser = ArgParser("coho")
-    val cohoScriptPath by parser.option(
-        PathArgType, "path", description = "Path to the coho script file", shortName = "i"
-    ).default(Paths.get("main.coho.kts"))
+    val cohoScriptPath by parser.argument(
+        PathArgType, fullName = "path", description = "Path to the coho script file"
+    ).optional().default(Paths.get("main.coho.kts"))
     val buildPath by parser.option(
         PathArgType, "build-path", description = "Path to the build directory", shortName = "B"
     ).default(Paths.get("build"))
@@ -113,10 +113,10 @@ fun main(args: Array<String>) {
         RootPath.rootBuildPath = tempBuildPath
         pos(
             "Evaluation complete in ${
-            measureTime {
-                structure = build(cohoScriptPath)
-            }
-        }")
+                measureTime {
+                    structure = build(cohoScriptPath)
+                }
+            }")
 
         if (structure == null) {
             tempBuildPath.deleteRecursively()
