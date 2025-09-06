@@ -5,12 +5,18 @@ import io.noties.prism4j.Prism4j.*
 import io.noties.prism4j.annotations.PrismBundle
 import java.util.regex.Pattern.compile
 
+/**
+ * @suppress
+ */
 @Suppress("unused")
 @PrismBundle(
     includeAll = true, grammarLocatorClassName = "dev.fishies.coho.core.PrismBundleGrammarLocator",
 )
 class WhyDoesThisExist
 
+/**
+ * @suppress
+ */
 @Suppress("unused")
 object Prism_qml {
     fun create(prism4j: Prism4j): Grammar {

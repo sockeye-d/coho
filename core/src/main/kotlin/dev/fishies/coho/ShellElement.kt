@@ -1,8 +1,12 @@
-package dev.fishies.coho.core
+package dev.fishies.coho
 
+import dev.fishies.coho.core.err
 import java.nio.file.Path
 import kotlin.io.path.absolutePathString
 
+/**
+ * @suppress
+ */
 class ShellElement(
     private val executable: String,
     private val workingDirectory: Path,

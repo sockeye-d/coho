@@ -1,7 +1,10 @@
-package dev.fishies.coho.core
+package dev.fishies.coho
 
+import dev.fishies.coho.core.TerminalColor
+import dev.fishies.coho.core.RESET
+import dev.fishies.coho.core.fg
+import dev.fishies.coho.core.info
 import java.nio.file.Path
-import kotlin.io.path.name
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.measureTimedValue
@@ -39,10 +42,10 @@ abstract class Element(val name: String) {
 
     private fun Duration?.color() = when (this) {
         null -> ""
-        in Duration.ZERO..<10.milliseconds -> fg(Color.Green)
-        in 10.milliseconds..<100.milliseconds -> fg(Color.YELLOW)
-        in 100.milliseconds..Duration.INFINITE -> fg(Color.RED)
-        else -> fg(Color.Cyan)
+        in Duration.ZERO..<10.milliseconds -> fg(TerminalColor.Green)
+        in 10.milliseconds..<100.milliseconds -> fg(TerminalColor.YELLOW)
+        in 100.milliseconds..Duration.INFINITE -> fg(TerminalColor.RED)
+        else -> fg(TerminalColor.Cyan)
     }
 
     protected val prefix

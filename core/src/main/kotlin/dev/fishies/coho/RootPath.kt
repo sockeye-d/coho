@@ -1,5 +1,8 @@
-package dev.fishies.coho.core
+package dev.fishies.coho
 
+import dev.fishies.coho.core.err
+import dev.fishies.coho.core.info
+import dev.fishies.coho.core.pos
 import java.nio.file.Path
 import java.nio.file.StandardWatchEventKinds.*
 import java.nio.file.WatchKey
@@ -8,6 +11,9 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.io.path.*
 import kotlin.time.TimeSource
 
+/**
+ * @suppress
+ */
 class RootPath(sourceDirectory: Source, buildPath: Path) : OutputPath("root", sourceDirectory, buildPath, { html: String -> "<!DOCTYPE HTML><html>$html</html>" }) {
     override fun _generate(location: Path): List<Path> {
         location.createDirectory()

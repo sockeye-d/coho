@@ -1,8 +1,8 @@
-package dev.fishies.coho.core
+package dev.fishies.coho
 
-import dev.fishies.coho.core.html.html
-import dev.fishies.coho.core.markdown.MarkdownTemplate
-import dev.fishies.coho.core.markdown.md
+import dev.fishies.coho.html.html
+import dev.fishies.coho.markdown.MarkdownTemplate
+import dev.fishies.coho.markdown.md
 import java.nio.file.Path
 import kotlin.io.path.createDirectory
 
@@ -12,6 +12,8 @@ import kotlin.io.path.createDirectory
  * Arbitrary [Element]s,
  * like [md] and [html], can be nested within an
  * [OutputPath] to specify the contents of that directory.
+ *
+ * @suppress
  */
 open class OutputPath(name: String, val source: Source, val buildPath: Path, var markdownTemplate: MarkdownTemplate) :
     Element(name) {

@@ -1,4 +1,4 @@
-package dev.fishies.coho.core
+package dev.fishies.coho
 
 import java.nio.file.Path
 import java.nio.file.Paths

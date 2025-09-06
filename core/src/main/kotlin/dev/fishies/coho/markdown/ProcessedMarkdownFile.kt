@@ -1,6 +1,6 @@
-package dev.fishies.coho.core.markdown
+package dev.fishies.coho.markdown
 
-import dev.fishies.coho.core.OutputPath
+import dev.fishies.coho.OutputPath
 import dev.fishies.coho.core.err
 import net.mamoe.yamlkt.Yaml
 import org.intellij.markdown.ast.ASTNode
@@ -13,6 +13,9 @@ typealias MarkdownTemplate = ProcessedMarkdownFile.(html: String) -> String
 
 private val hrefFixingRegex = Regex("href=\"([^\"]+)\\.md\"")
 
+/**
+ * Attribute customizer that remaps hrefs in links to point to HTML files instead of Markdown files.
+ */
 fun hrefFixingAttributesCustomizer(
     node: ASTNode, tagName: CharSequence, attributes: Iterable<CharSequence?>
 ) = if (tagName == "a") attributes.map { it?.replace(hrefFixingRegex, $$"href=\"$1.html\"") } else attributes
@@ -66,6 +69,9 @@ open class ProcessedMarkdownFile(
     }
 }
 
+/**
+ * Convert [Any] to a [Map] in a way that's easily null-safetied.
+ */
 fun Any.asMap() = this as Map<*, *>
 
 /**

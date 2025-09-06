@@ -1,15 +1,16 @@
-package dev.fishies.coho.core
+package dev.fishies.coho
 
-import sun.security.krb5.Confounder.bytes
 import java.net.URI
 import java.net.URL
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.io.path.createDirectory
 import kotlin.io.path.exists
 import kotlin.io.path.readBytes
 import kotlin.io.path.writeBytes
 
+/**
+ * @suppress
+ */
 class DownloadElement(val url: URL, val destination: String? = null, val useCache: Boolean) : Element(url.toString()) {
     override fun _generate(location: Path): List<Path> {
         val dest = location.resolve(destination ?: url.file.split("/").last())

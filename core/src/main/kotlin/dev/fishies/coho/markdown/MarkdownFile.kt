@@ -1,12 +1,10 @@
-package dev.fishies.coho.core.markdown
+package dev.fishies.coho.markdown
 
-import dev.fishies.coho.core.*
-import io.noties.prism4j.AbsVisitor
-import io.noties.prism4j.GrammarLocator
-import io.noties.prism4j.Prism4j
-import io.noties.prism4j.Prism4j.grammar
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle
-import org.apache.commons.text.StringEscapeUtils
+import dev.fishies.coho.Element
+import dev.fishies.coho.OutputPath
+import dev.fishies.coho.escapeHtml
+import dev.fishies.coho.highlight
+import dev.fishies.coho.unescapeHtml
 import org.intellij.markdown.*
 import org.intellij.markdown.ast.ASTNode
 import org.intellij.markdown.ast.getTextInNode
@@ -18,7 +16,10 @@ import org.intellij.markdown.parser.MarkdownParser
 import java.nio.file.Path
 import kotlin.io.path.*
 
-private class SyntaxHighlightedCommonMarkFlavourDescriptor(
+/**
+ * Hacked together Markdown flavour descriptor to highlight codeblocks with Prism4j.
+ */
+open class SyntaxHighlightedCommonMarkFlavourDescriptor(
     useSafeLinks: Boolean = true, absolutizeAnchorLinks: Boolean = false
 ) : CommonMarkFlavourDescriptor(useSafeLinks, absolutizeAnchorLinks) {
     override fun createHtmlGeneratingProviders(linkMap: LinkMap, baseURI: URI?): Map<IElementType, GeneratingProvider> {
@@ -82,6 +83,9 @@ private class SyntaxHighlightedCommonMarkFlavourDescriptor(
     }
 }
 
+/**
+ * @suppress
+ */
 open class MarkdownFile(val path: Path, val tagRenderer: HtmlGenerator.TagRenderer) : Element(path.name) {
     protected open fun preprocessMarkdown(src: String) = src
     protected open fun createHtml(src: String, tree: ASTNode, flavour: MarkdownFlavourDescriptor) =

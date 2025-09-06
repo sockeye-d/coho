@@ -5,16 +5,22 @@ import kotlin.script.experimental.api.*
 import kotlin.script.experimental.jvm.dependenciesFromCurrentContext
 import kotlin.script.experimental.jvm.jvm
 
+/**
+ * @suppress
+ */
 @KotlinScript(
     displayName = "Coho script", fileExtension = "coho.kts", compilationConfiguration = CohoScriptConfiguration::class
 )
 abstract class CohoScript
 
+/**
+ * @suppress
+ */
 class CohoScriptConfiguration : ScriptCompilationConfiguration({
     defaultImports(
-        "dev.fishies.coho.core.*",
-        "dev.fishies.coho.core.markdown.*",
-        "dev.fishies.coho.core.html.*",
+        "dev.fishies.coho.*",
+        "dev.fishies.coho.markdown.*",
+        "dev.fishies.coho.html.*",
         "java.nio.file.Path",
         "kotlin.io.path.*",
     )

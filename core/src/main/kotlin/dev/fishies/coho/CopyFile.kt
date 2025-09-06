@@ -1,9 +1,12 @@
-package dev.fishies.coho.core
+package dev.fishies.coho
 
 import java.nio.file.Path
 import kotlin.io.path.copyTo
 import kotlin.io.path.name
 
+/**
+ * @suppress
+ */
 open class CopyFile(val path: Path, destName: String = path.name) : Element(destName) {
     override fun _generate(location: Path): List<Path> = listOf(location.resolve(name).also { path.copyTo(it) })
 }

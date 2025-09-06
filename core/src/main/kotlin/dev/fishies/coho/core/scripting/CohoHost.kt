@@ -1,19 +1,25 @@
 package dev.fishies.coho.core.scripting
 
-import dev.fishies.coho.core.*
+import dev.fishies.coho.core.TerminalColor
+import dev.fishies.coho.core.RESET
+import dev.fishies.coho.core.err
+import dev.fishies.coho.core.fg
+import dev.fishies.coho.core.info
+import dev.fishies.coho.core.note
 import java.nio.file.Path
+import kotlin.collections.iterator
 import kotlin.script.experimental.api.*
 import kotlin.script.experimental.host.toScriptSource
 import kotlin.script.experimental.jvmhost.BasicJvmScriptingHost
 import kotlin.script.experimental.jvmhost.createJvmCompilationConfigurationFromTemplate
 
-val ScriptDiagnostic.Severity.fgColor
+private val ScriptDiagnostic.Severity.fgColor
     get() = when (this) {
-        ScriptDiagnostic.Severity.DEBUG -> Color.DEFAULT
-        ScriptDiagnostic.Severity.INFO -> Color.DEFAULT
-        ScriptDiagnostic.Severity.WARNING -> Color.YELLOW
-        ScriptDiagnostic.Severity.ERROR -> Color.RED
-        ScriptDiagnostic.Severity.FATAL -> Color.RED
+        ScriptDiagnostic.Severity.DEBUG -> TerminalColor.DEFAULT
+        ScriptDiagnostic.Severity.INFO -> TerminalColor.DEFAULT
+        ScriptDiagnostic.Severity.WARNING -> TerminalColor.YELLOW
+        ScriptDiagnostic.Severity.ERROR -> TerminalColor.RED
+        ScriptDiagnostic.Severity.FATAL -> TerminalColor.RED
     }
 
 private fun formatDiagnostic(sourceCode: SourceCode, diagnostic: ScriptDiagnostic, printer: (String) -> Unit) =
@@ -60,7 +66,11 @@ private fun formatDiagnostic(sourceCode: SourceCode, diagnostic: ScriptDiagnosti
 
 private val host by lazy { BasicJvmScriptingHost() }
 
-private fun evalSource(source: SourceCode, context: Map<String, Any?>): Any? {
+/**
+ * Evaluate the Kotlin [source] with the given [context].
+ * @return Whatever the script returns, or `null` if there wasn't a value.
+ */
+fun eval(source: SourceCode, context: Map<String, Any?>): Any? {
     val result = host.eval(source, createJvmCompilationConfigurationFromTemplate<CohoScript> {
         for ((key, value) in context) {
             val ktType = if (value == null) KotlinType(Any::class, isNullable = true) else KotlinType(value::class)
@@ -107,7 +117,15 @@ private fun evalSource(source: SourceCode, context: Map<String, Any?>): Any? {
     }
 }
 
-fun eval(script: Path, context: Map<String, Any?> = emptyMap()) = evalSource(script.toFile().toScriptSource(), context)
+/**
+ * Evaluate the Kotlin script file at [script] with the given [context].
+ * @return Whatever the script returns, or `null` if there wasn't a value.
+ */
+fun eval(script: Path, context: Map<String, Any?> = emptyMap()) = eval(script.toFile().toScriptSource(), context)
 
+/**
+ * Evaluate the Kotlin script string [script] with the given [context].
+ * @return Whatever the script returns, or `null` if there wasn't a value.
+ */
 fun eval(script: String, context: Map<String, Any?> = emptyMap(), name: String? = null) =
-    evalSource(script.toScriptSource(name), context)
+    eval(script.toScriptSource(name), context)
