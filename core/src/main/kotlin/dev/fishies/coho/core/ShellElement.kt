@@ -10,16 +10,14 @@ class ShellElement(
     private val showStdOut: Boolean
 ) : Element("[$workingDirectory] $executable ${arguments.joinToString(" ")}") {
     override fun _generate(location: Path): List<Path> {
-        val proc =
-            ProcessBuilder().directory(workingDirectory.toFile()).command(executable, *arguments.map {
-                when (it) {
-                    is Path -> location.resolve(it).absolutePathString()
-                    else -> it.toString()
-                }
-            }.toTypedArray())
-                .redirectOutput(if (showProgress && showStdOut) ProcessBuilder.Redirect.INHERIT else ProcessBuilder.Redirect.DISCARD)
-                .redirectError(ProcessBuilder.Redirect.INHERIT)
-                .start()!!
+        val proc = ProcessBuilder().directory(workingDirectory.toFile()).command(executable, *arguments.map {
+            when (it) {
+                is Path -> location.resolve(it).absolutePathString()
+                else -> it.toString()
+            }
+        }.toTypedArray())
+            .redirectOutput(if (showProgress && showStdOut) ProcessBuilder.Redirect.INHERIT else ProcessBuilder.Redirect.DISCARD)
+            .redirectError(ProcessBuilder.Redirect.INHERIT).start()!!
         val err = proc.waitFor()
         if (err != 0) {
             err("$executable $arguments exited with code $err")

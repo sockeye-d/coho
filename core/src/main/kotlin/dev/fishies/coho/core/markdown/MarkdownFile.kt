@@ -2,6 +2,7 @@ package dev.fishies.coho.core.markdown
 
 import dev.fishies.coho.core.*
 import io.noties.prism4j.AbsVisitor
+import io.noties.prism4j.GrammarLocator
 import io.noties.prism4j.Prism4j
 import io.noties.prism4j.Prism4j.grammar
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle
@@ -27,7 +28,6 @@ private class SyntaxHighlightedCommonMarkFlavourDescriptor(
                 override fun processNode(
                     visitor: HtmlGenerator.HtmlGeneratingVisitor, text: String, node: ASTNode
                 ) {
-                    val prism4j = Prism4j(PrismBundleGrammarLocator())
                     val indentBefore = node.getTextInNode(text).commonPrefixWith(" ".repeat(10)).length
 
                     visitor.consumeHtml("<pre class=\"codeblock\">")
