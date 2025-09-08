@@ -42,10 +42,10 @@ abstract class Element(val name: String) {
 
     private fun Duration?.color() = when (this) {
         null -> ""
-        in Duration.ZERO..<10.milliseconds -> fg(TerminalColor.Green)
+        in Duration.ZERO..<10.milliseconds -> fg(TerminalColor.GREEN)
         in 10.milliseconds..<100.milliseconds -> fg(TerminalColor.YELLOW)
         in 100.milliseconds..Duration.INFINITE -> fg(TerminalColor.RED)
-        else -> fg(TerminalColor.Cyan)
+        else -> fg(TerminalColor.CYAN)
     }
 
     protected val prefix

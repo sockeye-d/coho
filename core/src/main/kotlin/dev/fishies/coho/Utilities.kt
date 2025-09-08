@@ -1,13 +1,10 @@
 package dev.fishies.coho
 
-import dev.fishies.coho.core.PrismBundleGrammarLocator
-import dev.fishies.coho.core.Prism_qml
-import dev.fishies.coho.core.err
-import dev.fishies.coho.core.info
+import dev.fishies.coho.core.*
+import dev.fishies.coho.core.highlighting.prism
 import dev.fishies.coho.core.scripting.eval
 import dev.fishies.coho.html.KtHTMLFile
 import io.noties.prism4j.AbsVisitor
-import io.noties.prism4j.GrammarLocator
 import io.noties.prism4j.Prism4j
 import org.apache.commons.text.StringEscapeUtils
 import java.nio.file.Path
@@ -81,49 +78,96 @@ fun String.unescapeHtml(): String = StringEscapeUtils.unescapeHtml4(this)
  */
 fun String.unescapeXml(): String = StringEscapeUtils.unescapeXml(this)
 
-/**
- * Highlight [this] according to [language].
- * If the language doesn't exist, it returns null.
- */
-fun String.highlight(language: String): String? {
+private class HTMLVisitor(val sb: StringBuilder, val language: String) : AbsVisitor() {
+    override fun visitText(text: Prism4j.Text) {
+        sb.append("<span class=\"code-text code-$language-text\">${text.literal().escapeHtml()}</span>")
+    }
+
+    override fun visitSyntax(syntax: Prism4j.Syntax) {
+        val firstChild = syntax.children().first()
+        if (syntax.children().size == 1 && firstChild is Prism4j.Text) {
+            val inner = firstChild.literal().escapeHtml()
+            val classes = mutableListOf<String>()
+            classes.add("code-${syntax.type()}")
+            syntax.alias()?.apply { classes.add("code-$this") }
+            classes.add("code-$language-${syntax.type()}")
+            syntax.alias()?.apply { classes.add("code-$language-$this") }
+            sb.append("<span class=\"${classes.joinToString(" ")}\">$inner</span>")
+        } else {
+            visit(syntax.children())
+        }
+    }
+}
+
+private class ANSIVisitor(val sb: StringBuilder, val language: String) : AbsVisitor() {
+    private val String.color: String
+        get() = when (this) {
+            "keyword" -> fg(TerminalColor.MAGENTA)
+            "function" -> ITALIC + fg(TerminalColor.BLUE)
+            "number" -> fg(TerminalColor.YELLOW)
+            "operator" -> fg(TerminalColor.CYAN)
+            "comment" -> fg(TerminalColor.DEFAULT)
+            "text" -> fg(TerminalColor.DEFAULT)
+            "annotation" -> fg(TerminalColor.YELLOW)
+            "punctuation" -> fg(TerminalColor.DEFAULT)
+            "string" -> fg(TerminalColor.GREEN)
+            "raw-string" -> fg(TerminalColor.GREEN)
+            "label" -> fg(TerminalColor.DEFAULT)
+            "class-name" -> fg(TerminalColor.YELLOW)
+            "directive" -> fg(TerminalColor.CYAN)
+            "boolean" -> fg(TerminalColor.MAGENTA)
+            "interpolation" -> fg(TerminalColor.RED)
+            "delimiter" -> fg(TerminalColor.MAGENTA)
+            "attr-name" -> fg(TerminalColor.YELLOW)
+            "cdata" -> fg(TerminalColor.RED)
+            "entity" -> ITALIC + fg(TerminalColor.RED)
+            "prolog" -> fg(TerminalColor.RED)
+            "rule" -> ITALIC + fg(TerminalColor.RED)
+            "selector" -> fg(TerminalColor.CYAN)
+            "property" -> fg(TerminalColor.BLUE)
+            "identifier" -> fg(TerminalColor.DEFAULT)
+            "module" -> fg(TerminalColor.GREEN)
+            "bold" -> BOLD
+            "italic" -> ITALIC
+            else -> RESET
+        }
+
+    override fun visitText(text: Prism4j.Text) {
+        sb.append(RESET + text.literal())
+    }
+
+    override fun visitSyntax(syntax: Prism4j.Syntax) {
+        val firstChild = syntax.children().first()
+        if (syntax.children().size == 1 && firstChild is Prism4j.Text) {
+            sb.append(syntax.type().color + firstChild.literal() + RESET)
+        } else {
+            visit(syntax.children())
+        }
+    }
+}
+
+private fun String.highlightInternal(language: String, visitor: (StringBuilder) -> AbsVisitor): String? {
     val sb = StringBuilder()
     val time = measureTime {
-        val prism = Prism4j(object : GrammarLocator {
-            val delegate = PrismBundleGrammarLocator()
-            override fun grammar(prism4j: Prism4j, language: String) = when (language) {
-                "qml" -> Prism_qml.create(prism4j)
-                else -> delegate.grammar(prism4j, language)
-            }
-
-            override fun languages() = delegate.languages() + "qml"
-        })
         val grammar = language.run { prism.grammar(this) } ?: return null
         val tokens = prism.tokenize(this, grammar)
-        val tokenVisitor: AbsVisitor = object : AbsVisitor() {
-            override fun visitText(text: Prism4j.Text) {
-                sb.append("<span class=\"code-text code-$language-text\">${text.literal().escapeHtml()}</span>")
-            }
-
-            override fun visitSyntax(syntax: Prism4j.Syntax) {
-                val firstChild = syntax.children().first()
-                if (syntax.children().size == 1 && firstChild is Prism4j.Text) {
-                    val inner = firstChild.literal().escapeHtml()
-                    val classes = mutableListOf<String>()
-                    classes.add("code-${syntax.type()}")
-                    syntax.alias()?.apply { classes.add("code-$this") }
-                    classes.add("code-$language-${syntax.type()}")
-                    syntax.alias()?.apply { classes.add("code-$language-$this") }
-                    sb.append("<span class=\"${classes.joinToString(" ")}\">$inner</span>")
-                } else {
-                    visit(syntax.children())
-                }
-            }
-        }
-        tokenVisitor.visit(tokens)
+        visitor(sb).visit(tokens)
     }
     info("Highlighting $language (length: $length) took $time", verbose = true)
     return sb.toString()
 }
+
+/**
+ * Highlight [this] according to [language], returning an HTML string.
+ * If the language doesn't exist, it returns null.
+ */
+fun String.highlight(language: String) = highlightInternal(language) { HTMLVisitor(it, language) }
+
+/**
+ * Highlight [this] according to [language], returning an ANSI color-coded string.
+ * If the language doesn't exist, it returns null.
+ */
+fun String.highlightANSI(language: String) = highlightInternal(language) { ANSIVisitor(it, language) }
 
 private fun String.substr(startIndex: Int, endIndex: Int) =
     if (endIndex < 0) substring(startIndex) else substring(startIndex, endIndex)

@@ -229,7 +229,5 @@ private fun copyTemplateFile(resource: String, force: Boolean) =
 private fun createProject(scriptPath: Path, force: Boolean): Unit? {
     copyTemplateFile("/template/main.coho.kts", scriptPath, force) ?: return null
     copyTemplateFile("/template/index.md", force) ?: return null
-    copyTemplateFile("/template/highlight.js", force) ?: return null
-    copyTemplateFile("/template/index.md", force) ?: return null
     return Unit
 }

@@ -6,6 +6,7 @@ import dev.fishies.coho.core.err
 import dev.fishies.coho.core.fg
 import dev.fishies.coho.core.info
 import dev.fishies.coho.core.note
+import dev.fishies.coho.highlightANSI
 import java.nio.file.Path
 import kotlin.collections.iterator
 import kotlin.script.experimental.api.*
@@ -30,12 +31,12 @@ private fun formatDiagnostic(sourceCode: SourceCode, diagnostic: ScriptDiagnosti
             printer("$scriptLabel: $message")
             return@with
         }
-        val line = sourceCode.text.lines()[location.start.line - 1].trimEnd()
+        val line = sourceCode.text.highlightANSI("kotlin")!!.lines()[location.start.line - 1].trimEnd()
         val trimmedLine = line.trimStart()
         val shift = line.length - trimmedLine.length
         val column = location.start.col
         val prefix = "$scriptLabel@${location.start.line}:${location.start.col}: "
-        printer("$prefix$trimmedLine")
+        printer("$prefix${trimmedLine}")
         val end = location.end
         val spacing = " ".repeat(prefix.length + column - shift - 1)
         if (end == null || end.line != location.start.line) {

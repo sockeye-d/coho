@@ -1,11 +1,11 @@
 package dev.fishies.coho.core
 
 enum class TerminalColor(val code: Int) {
-    Black(30), RED(31), Green(32), YELLOW(33), BLUE(34), MAGENTA(35), Cyan(36), WHITE(37), DEFAULT(39), RESET(0),
+    BLACK(30), RED(31), GREEN(32), YELLOW(33), BLUE(34), MAGENTA(35), CYAN(36), WHITE(37), DEFAULT(39), RESET(0),
 }
 
 enum class CursorDirection(val code: Char) {
-    Up('A'), Down('B'), Right('C'), Left('D'),
+    UP('A'), DOWN('B'), RIGHT('C'), LEFT('D'),
 };
 
 object ANSI {
@@ -29,6 +29,15 @@ const val ESC = "\u001b"
  * Reset all text effects.
  */
 const val RESET = "$ESC[0m";
+
+const val BOLD = "$ESC[1m"
+const val FAINT = "$ESC[2m"
+const val ITALIC = "$ESC[3m"
+const val UNDERLINE = "$ESC[4m"
+const val BLINKING = "$ESC[5m"
+const val INVERT = "$ESC[6m"
+const val INVISIBLE = "$ESC[7m"
+const val STRIKETHROUGH = "$ESC[8m"
 
 /**
  * Set the foreground color to [color].
@@ -68,7 +77,7 @@ val NOTE = "${fg(TerminalColor.YELLOW)}note:${RESET}"
 /**
  * Prefix for success messages (green `success:`)
  */
-val POSITIVE = "${fg(TerminalColor.Green)}success:${RESET}"
+val POSITIVE = "${fg(TerminalColor.GREEN)}success:${RESET}"
 
 /**
  * Print [string] prefixed with [ERROR] to stderr with the [lineEnding].
