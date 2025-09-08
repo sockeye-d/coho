@@ -119,10 +119,10 @@ fun main(args: Array<String>) {
         RootPath.rootBuildPath = tempBuildPath
         pos(
             "Evaluation complete in ${
-                measureTime {
-                    structure = build(cohoScriptPath)
-                }
-            }")
+            measureTime {
+                structure = build(cohoScriptPath)
+            }
+        }")
 
         if (structure == null) {
             tempBuildPath.deleteRecursively()
@@ -228,6 +228,7 @@ private fun copyTemplateFile(resource: String, force: Boolean) =
 
 private fun createProject(scriptPath: Path, force: Boolean): Unit? {
     copyTemplateFile("/template/main.coho.kts", scriptPath, force) ?: return null
+    copyTemplateFile("/template/markdown-template.html", force) ?: return null
     copyTemplateFile("/template/index.md", force) ?: return null
     return Unit
 }

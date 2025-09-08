@@ -46,7 +46,7 @@ import dev.fishies.coho.OutputPath
  *
  * @see [ktHtml]
  */
-fun ktHtmlTemplate(
+fun ktMdTemplate(
     source: Path,
     contentKey: String = "content",
     context: Map<String, Any?> = emptyMap(),

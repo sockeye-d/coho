@@ -66,3 +66,14 @@ root {
     md(src("index.md"))
 }
 ```
+
+# HTML templating
+
+Coho supports PHP-style templated HTML with Kotlin. Any code within `<?kt ... ?>` will get evaluated and will be 
+replaced with the result.
+
+There are three primary ways to access this:
+* [`ktHtml`](https://coho.fishies.dev/core/dev.fishies.coho.html/kt-html.html) — works like other output types like 
+  `md`, processing the source file and directly outputting a plain HTML file.
+* [`ktMdTemplate`](https://coho.fishies.dev/core/dev.fishies.coho.html/kt-md-template.html)  — works 
+* `ktTemplate`
