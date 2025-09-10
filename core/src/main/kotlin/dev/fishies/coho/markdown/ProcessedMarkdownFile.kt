@@ -2,29 +2,50 @@ package dev.fishies.coho.markdown
 
 import dev.fishies.coho.OutputPath
 import dev.fishies.coho.core.err
+import dev.fishies.coho.escapeXml
 import net.mamoe.yamlkt.Yaml
 import org.intellij.markdown.ast.ASTNode
+import org.intellij.markdown.ast.getTextInNode
 import org.intellij.markdown.flavours.MarkdownFlavourDescriptor
-import org.intellij.markdown.html.AttributesCustomizer
 import org.intellij.markdown.html.HtmlGenerator
 import java.nio.file.Path
 
 typealias MarkdownTemplate = ProcessedMarkdownFile.(html: String) -> String
+typealias StatefulAttributeCustomizer = ProcessedMarkdownFile.(node: ASTNode, tagName: CharSequence, attributes: Iterable<CharSequence?>) -> Iterable<CharSequence?>
 
 private val hrefFixingRegex = Regex("href=\"([^\"]+)\\.md\"")
+private val whitespaceRegex = Regex("\\s+")
 
 /**
  * Attribute customizer that remaps hrefs in links to point to HTML files instead of Markdown files.
  */
-fun hrefFixingAttributesCustomizer(
+fun ProcessedMarkdownFile.hrefFixingAttributesCustomizer(
     node: ASTNode, tagName: CharSequence, attributes: Iterable<CharSequence?>
 ) = if (tagName == "a") attributes.map { it?.replace(hrefFixingRegex, $$"href=\"$1.html\"") } else attributes
 
+fun ProcessedMarkdownFile.headingIDAttributeCustomizer(
+    node: ASTNode, tagName: CharSequence, attributes: Iterable<CharSequence?>
+) = if (tagName in listOf("h1", "h2", "h3", "h4", "h5", "h6")) attributes + "id=\"${
+    node.children.last().getTextInNode(content).trim().replace(whitespaceRegex, "-").lowercase().escapeXml()
+}\"" else attributes
+
+/**
+ * Meta-attribute customizer that applies a series of customizers.
+ */
+fun compoundAttributeCustomizer(vararg customizers: StatefulAttributeCustomizer): StatefulAttributeCustomizer =
+    { node: ASTNode, tagName: CharSequence, attributes: Iterable<CharSequence?> ->
+        customizers.fold(attributes) { fold, value -> this.value(node, tagName, fold) }
+    }
+
 open class ProcessedMarkdownFile(
-    path: Path, val markdownTemplate: MarkdownTemplate, attributesCustomizer: AttributesCustomizer
+    content: String,
+    path: Path,
+    val markdownTemplate: MarkdownTemplate,
+    val attributesCustomizer: StatefulAttributeCustomizer
 ) : MarkdownFile(
-    path, HtmlGenerator.DefaultTagRenderer(attributesCustomizer, false)
+    content, path, HtmlGenerator.DefaultTagRenderer({ _, _, it -> it }, false)
 ) {
+
     /**
      * The 'frontmatter' of the Markdown document; e.g., the section that comes before the content:
      *
@@ -64,7 +85,8 @@ open class ProcessedMarkdownFile(
     }
 
     override fun createHtml(src: String, tree: ASTNode, flavour: MarkdownFlavourDescriptor): String {
-        val html = HtmlGenerator(src, tree, flavour).generateHtml(tagRenderer)
+        val realTagRenderer = HtmlGenerator.DefaultTagRenderer({ a, b, c -> attributesCustomizer(a, b, c) }, false)
+        val html = HtmlGenerator(src, tree, flavour).generateHtml(realTagRenderer)
         return markdownTemplate(html)
     }
 }
@@ -104,6 +126,8 @@ ${html.prependIndent()}
 
 /**
  * Convert a Markdown file to an HTML body with the given template and attribute customizer.
+ * By default, [hrefFixingAttributesCustomizer] to retarget hrefs to html files and [headingIDAttributeCustomizer] to
+ * add IDs to headings are applied.
  *
  * [MarkdownTemplate]s are functions that accept the HTML output of the Markdown parser and return more HTML.
  * It also includes the context of the [ProcessedMarkdownFile],
@@ -112,5 +136,7 @@ ${html.prependIndent()}
 fun OutputPath.md(
     source: Path,
     markdownTemplate: MarkdownTemplate = this.markdownTemplate,
-    attributesCustomizer: AttributesCustomizer = ::hrefFixingAttributesCustomizer,
-) = children.add(ProcessedMarkdownFile(source, markdownTemplate, attributesCustomizer))
+    attributesCustomizer: StatefulAttributeCustomizer = compoundAttributeCustomizer(
+        ProcessedMarkdownFile::hrefFixingAttributesCustomizer, ProcessedMarkdownFile::headingIDAttributeCustomizer
+    ),
+) = children.add(ProcessedMarkdownFile("", source, markdownTemplate, attributesCustomizer))

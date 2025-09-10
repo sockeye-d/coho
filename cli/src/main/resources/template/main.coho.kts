@@ -11,10 +11,7 @@ root {
         )(it)
     }
 
-    KtHTMLFile.globalContext = mapOf(
-        "longGitHash" to exec("git", "rev-parse", "HEAD"),
-    )
-
+    md(src("a.md"))
     md(src("index.md"))
     cp(src("style.css"))
 }

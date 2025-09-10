@@ -1,7 +1,6 @@
 package dev.fishies.coho.markdown
 
 import dev.fishies.coho.*
-import dev.fishies.coho.core.highlighting.prism
 import org.intellij.markdown.*
 import org.intellij.markdown.ast.ASTNode
 import org.intellij.markdown.ast.getTextInNode
@@ -109,18 +108,18 @@ open class SyntaxHighlightedGFMFlavourDescriptor(
 /**
  * @suppress
  */
-open class MarkdownFile(val path: Path, val tagRenderer: HtmlGenerator.TagRenderer) : Element(path.name) {
+open class MarkdownFile(var content: String, val path: Path, var tagRenderer: HtmlGenerator.TagRenderer) : Element(path.name) {
     protected open fun preprocessMarkdown(src: String) = src
     protected open fun createHtml(src: String, tree: ASTNode, flavour: MarkdownFlavourDescriptor) =
         HtmlGenerator(src, tree, flavour).generateHtml(tagRenderer)
 
     override fun _generate(location: Path): List<Path> {
-        val src = preprocessMarkdown(path.readText())
+        content = preprocessMarkdown(path.readText())
         val flavour = SyntaxHighlightedGFMFlavourDescriptor()
-        val parsedTree = MarkdownParser(flavour).buildMarkdownTreeFromString(src)
+        val parsedTree = MarkdownParser(flavour).buildMarkdownTreeFromString(content)
         return listOf(
             location.resolve(path.nameWithoutExtension + ".html")
-                .apply { writeText(createHtml(src, parsedTree, flavour)) })
+                .apply { writeText(createHtml(content, parsedTree, flavour)) })
     }
 }
 
@@ -130,7 +129,7 @@ open class MarkdownFile(val path: Path, val tagRenderer: HtmlGenerator.TagRender
  */
 fun OutputPath.mdBasic(source: Path) = children.add(
     MarkdownFile(
-        source, HtmlGenerator.DefaultTagRenderer(
+        "", source, HtmlGenerator.DefaultTagRenderer(
             DUMMY_ATTRIBUTES_CUSTOMIZER, false
         )
     )

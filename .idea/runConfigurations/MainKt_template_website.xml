@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="MainKt template website" type="JetRunConfigurationType">
+    <option name="ALTERNATIVE_JRE_PATH" value="temurin-23" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+    <option name="MAIN_CLASS_NAME" value="dev.fishies.coho.cli.MainKt" />
+    <module name="coho.cli.main" />
+    <option name="PROGRAM_PARAMETERS" value="serve" />
+    <shortenClasspath name="NONE" />
+    <option name="WORKING_DIRECTORY" value="$ProjectFileDir$/cli/src/main/resources/template" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

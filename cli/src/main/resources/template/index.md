@@ -162,6 +162,24 @@ root {
 
 ### Syntax highlighting
 
+You can make a syntax-highlighted codeblock with the standard Markdown syntax:
+
+````markdown
+```kotlin
+root {
+    ktHtml(src("index.html"))
+}
+```
+````
+
+You can make syntax-highlighted inline codeblocks with this syntax:
+
+```markdown
+`#!kotlin root { ktHtml(src("index.html")) }`
+```
+
+This is good for `#!kotlin "embedding".code("in your")` text.
+
 Coho uses [Prism4j](https://github.com/noties/Prism4j/) for syntax highlighting, so it supports the 25 languages it
 does:
 
@@ -192,7 +210,7 @@ does:
 Coho also adds definitions for
 
 * `qml`
-* `nushell` (coming soon)
+* `nushell`
 
 You can syntax highlight text in Markdown files or more directly with the
 [`highlight`](https://coho.fishies.dev/core/dev.fishies.coho/highlight.html) and

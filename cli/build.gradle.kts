@@ -7,10 +7,10 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.stdlib)
-    implementation(libs.reflect)
-    implementation(libs.bundles.ktor)
+    implementation(libs.kt.stdlib)
+    implementation(libs.kt.reflect)
     implementation(libs.ktx.cli)
+    implementation(libs.bundles.ktor)
 
     implementation(project(":core"))
 }
@@ -29,6 +29,6 @@ tasks.shadowJar {
     //     libs.bundles.kts.map { include(dependency(it)) }
     // }
     minimize {
-        include(dependency(libs.reflect))
+        include(dependency(libs.kt.reflect))
     }
 }

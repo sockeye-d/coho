@@ -18,7 +18,7 @@ val prism = Prism4j(object : GrammarLocator {
     val delegate = PrismBundleGrammarLocator()
     override fun grammar(prism4j: Prism4j, language: String) = when (language) {
         "qml" -> createQmlGrammar(prism4j)
-        in arrayOf("nu", "nushell") -> createNushellGrammar(prism4j)
+        in arrayOf("nu", "nushell") -> createNushellGrammar()
         else -> delegate.grammar(prism4j, language)
     }
 

@@ -10,9 +10,69 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
 </head>
 
-<link rel="stylesheet" href="/style.css">
 <body>
-<?kt content ?>
+<div id="sidebar"></div>
+<div class="content">
+    <?kt content ?>
+</div>
+<script>
+    function waitForElm(selector) {
+        return new Promise(resolve => {
+            if (document.querySelector(selector)) {
+                return resolve(document.querySelector(selector));
+            }
+
+            const observer = new MutationObserver(_ => {
+                if (document.querySelector(selector)) {
+                    observer.disconnect();
+                    resolve(document.querySelector(selector));
+                }
+            });
+
+            // If you get "parameter 1 is not of type 'Node'" error, see https://stackoverflow.com/a/77855838/492336
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        });
+    }
+
+    function getListItemHTML(node) {
+        const url = new URL(location.href);
+        url.hash = node.id;
+        return `<a href="${url.href}">${node.textContent}</a>`
+    }
+
+    function generateNav(node = document.querySelector(".content")) {
+        let str = "<ul>"
+        let lastHeadingLevel = 0
+        node.childNodes.forEach(child => {
+            // skip non-headings
+            if (child.tagName !== "H1" && child.tagName !== "H2" && child.tagName !== "H3" && child.tagName !== "H4" && child.tagName !== "H5" && child.tagName !== "H6") {
+                return
+            }
+            const headingLevel = parseInt(child.tagName.substring(1))
+            if (lastHeadingLevel === headingLevel) {
+                // equally indented, close last element's ul (it will be empty) and li and open new one
+                str += `</ul></li><li>${getListItemHTML(child)}<ul>`
+            } else if (lastHeadingLevel < headingLevel) {
+                // more indented, don't close last element's ul
+                str += `<li>${getListItemHTML(child)}<ul>`
+            } else {
+                // unindented, close last tag + whatever the diff is between the current and last level
+                const diff = lastHeadingLevel - headingLevel
+                str += "</ul></li>" + "</ul>".repeat(diff)
+                str += `<li>${getListItemHTML(child)}</li><ul>`
+            }
+            lastHeadingLevel = headingLevel
+        })
+        return str + "</ul>"
+    }
+
+    waitForElm("#sidebar")
+    document.querySelector("#sidebar").innerHTML = generateNav()
+</script>
+<link rel="stylesheet" href="/style.css">
 </body>
 
 </html>

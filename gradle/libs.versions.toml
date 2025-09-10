@@ -3,8 +3,8 @@ kotlin = "2.2.10"
 ktor-server = "3.2.3"
 
 [libraries]
-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8", version.ref = "kotlin" }
-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
+kt-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8", version.ref = "kotlin" }
+kt-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
 markdown = "org.jetbrains:markdown:0.7.3"
 
 commonstext = "org.apache.commons:commons-text:1.14.0"

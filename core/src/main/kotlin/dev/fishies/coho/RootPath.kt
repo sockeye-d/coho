@@ -77,7 +77,7 @@ class RootPath(sourceDirectory: Source, buildPath: Path) : OutputPath("root", so
                 val filename = event.context() as Path
                 val fullPath = dir.resolve(filename)
 
-                if (fullPath.isHidden()) {
+                if (fullPath.isHidden() || fullPath.name.endsWith("~")) {
                     continue
                 }
 

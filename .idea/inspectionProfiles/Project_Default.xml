@@ -8,6 +8,7 @@
     <inspection_tool class="FunctionName" enabled="true" level="WEAK WARNING" enabled_by_default="true">
       <option name="namePattern" value="_?[a-z][A-Za-z\d]*" />
     </inspection_tool>
+    <inspection_tool class="PackageDirectoryMismatch" enabled="true" level="INFORMATION" enabled_by_default="true" editorAttributes="INFORMATION_ATTRIBUTES" />
     <inspection_tool class="RegExpRedundantEscape" enabled="false" level="WARNING" enabled_by_default="false" />
   </profile>
 </component>

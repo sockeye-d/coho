@@ -1,4 +1,12 @@
 import org.jetbrains.dokka.gradle.DokkaTask
+import org.jetbrains.dokka.base.DokkaBase
+import org.jetbrains.dokka.base.DokkaBaseConfiguration
+
+buildscript {
+    dependencies {
+        classpath("org.jetbrains.dokka:dokka-base:2.0.0")
+    }
+}
 
 val jvmTarget: String by project
 
@@ -9,12 +17,12 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.stdlib)
-    implementation(libs.reflect)
-    implementation(libs.bundles.kts)
-    implementation(libs.markdown)
+    implementation(libs.kt.stdlib)
+    implementation(libs.kt.reflect)
     implementation(libs.ktx.yaml)
     implementation(libs.ktx.coroutines.core)
+    implementation(libs.bundles.kts)
+    implementation(libs.markdown)
     implementation(libs.prism4j)
     implementation(libs.commonstext)
     kapt(libs.prism4j.bundler)
