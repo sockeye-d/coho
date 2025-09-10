@@ -13,14 +13,9 @@ private const val QUALIFIED_IDENTIFIER = "($IDENTIFIER\\.)*$IDENTIFIER"
 
 private const val TYPED_IDENTIFIER = "$IDENTIFIER\\s*"
 private const val TYPED_ARGUMENT_LIST = "($TYPED_IDENTIFIER?)|($TYPED_IDENTIFIER\\s*,\\s*)"
-private val brackets = generateBracketPattern()
+private val brackets = generateNestedPattern()
 
-private fun generateBracketPattern(depth: Int = 4): String {
-    fun level(currentDepth: Int): String =
-        if (currentDepth <= 0) "[^{}]*" else "(?:[^{}]|\\{${level(currentDepth - 1)}\\})*"
-    return level(depth)
-}
-
+object Prism_qml
 /**
  * @suppress
  */

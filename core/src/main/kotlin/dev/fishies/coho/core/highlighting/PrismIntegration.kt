@@ -18,8 +18,18 @@ val prism = Prism4j(object : GrammarLocator {
     val delegate = PrismBundleGrammarLocator()
     override fun grammar(prism4j: Prism4j, language: String) = when (language) {
         "qml" -> createQmlGrammar(prism4j)
+        in arrayOf("nu", "nushell") -> createNushellGrammar(prism4j)
         else -> delegate.grammar(prism4j, language)
     }
 
     override fun languages() = delegate.languages() + "qml"
 })
+
+/**
+ * @suppress
+ */
+fun generateNestedPattern(depth: Int = 4, opening: String = "{", closing: String = "}"): String {
+    fun level(currentDepth: Int): String =
+        if (currentDepth <= 0) "[^$opening]*" else "(?:[^$opening]|$opening${level(currentDepth - 1)}$closing)*"
+    return level(depth)
+}

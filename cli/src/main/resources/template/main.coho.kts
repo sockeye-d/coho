@@ -5,11 +5,16 @@ root {
         val description: String? = meta?.get("description") as? String
         val type: String? = meta?.get("type") as? String
 
-        ktHtmlTemplate(
+        ktMdTemplate(
             src("markdown-template.html"),
             context = mapOf("title" to title, "description" to description, "type" to type),
         )(it)
     }
 
+    KtHTMLFile.globalContext = mapOf(
+        "longGitHash" to exec("git", "rev-parse", "HEAD"),
+    )
+
     md(src("index.md"))
+    cp(src("style.css"))
 }

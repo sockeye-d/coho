@@ -1,0 +1,147 @@
+:root {
+    --rosewater: #dc8a78;
+    --flamingo: #dd7878;
+    --pink: #ea76cb;
+    --mauve: #8839ef;
+    --red: #d20f39;
+    --maroon: #e64553;
+    --peach: #fe640b;
+    --yellow: #df8e1d;
+    --green: #40a02b;
+    --teal: #179299;
+    --sky: #04a5e5;
+    --sapphire: #209fb5;
+    --blue: #1e66f5;
+    --lavender: #7287fd;
+    --text: #4c4f69;
+    --subtext1: #5c5f77;
+    --subtext0: #6c6f85;
+    --overlay2: #7c7f93;
+    --overlay1: #8c8fa1;
+    --overlay0: #9ca0b0;
+    --surface2: #acb0be;
+    --surface1: #bcc0cc;
+    --surface0: #ccd0da;
+    --base: #eff1f5;
+    --mantle: #e6e9ef;
+    --crust: #dce0e8;
+}
+
+code > span {
+    color: #ff00ff;
+}
+
+.code-keyword {
+    color: var(--mauve);
+}
+
+.code-function {
+    color: var(--blue);
+    font-style: italic;
+}
+
+.code-number {
+    color: var(--peach);
+}
+
+.code-operator {
+    color: var(--sky);
+}
+
+.code-comment {
+    color: var(--overlay2);
+}
+
+.code-text {
+    color: var(--text);
+}
+
+.code-annotation {
+    color: var(--yellow);
+}
+
+.code-punctuation {
+    color: var(--overlay2);
+}
+
+.code-string {
+    color: var(--green);
+}
+
+.code-raw-string {
+    color: var(--green);
+}
+
+.code-label {
+    color: var(--text);
+}
+
+.code-class-name {
+    color: var(--yellow)
+}
+
+.code-directive {
+    color: var(--teal)
+}
+
+.code-text:has(+ .code-directive) {
+    color: var(--teal)
+}
+
+.code-boolean {
+    color: var(--mauve);
+}
+
+.code-interpolation {
+    color: var(--pink);
+}
+
+.code-delimiter {
+    color: var(--pink);
+}
+
+.code-attr-name {
+    color: var(--yellow);
+}
+
+.code-cdata {
+    color: var(--lavender);
+}
+
+.code-entity {
+    color: var(--peach);
+    font-style: italic;
+}
+
+.code-prolog {
+    color: var(--yellow);
+}
+
+.code-rule {
+    color: var(--red);
+    font-style: italic;
+}
+
+.code-selector {
+    color: var(--teal);
+}
+
+.code-property {
+    color: var(--blue);
+}
+
+.code-identifier {
+    color: var(--text);
+}
+
+.code-module {
+    color: var(--teal);
+}
+
+.code-constant {
+    color: var(--peach);
+}
+
+.code-url {
+    color: var(--green);
+}

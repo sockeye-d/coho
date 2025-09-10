@@ -230,5 +230,6 @@ private fun createProject(scriptPath: Path, force: Boolean): Unit? {
     copyTemplateFile("/template/main.coho.kts", scriptPath, force) ?: return null
     copyTemplateFile("/template/markdown-template.html", force) ?: return null
     copyTemplateFile("/template/index.md", force) ?: return null
+    copyTemplateFile("/template/style.css", force) ?: return null
     return Unit
 }
