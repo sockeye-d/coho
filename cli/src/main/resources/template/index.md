@@ -160,6 +160,23 @@ root {
 }
 ```
 
+The frontmatter is a triple-backticked codeblock at the top of the file containing arbitrary YAML, like this:
+````markdown
+```yaml
+meta:
+  title: "example frontmatter"
+  description: "a really good description"
+```
+
+# title
+
+the rest of the document
+````
+
+The type annotation is optional, but it must either
+* not exist
+* be `yaml`
+
 ### Syntax highlighting
 
 You can make a syntax-highlighted codeblock with the standard Markdown syntax:
