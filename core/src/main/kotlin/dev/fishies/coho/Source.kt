@@ -11,8 +11,7 @@ class Source(val sourcePath: Path) : Iterable<Path> {
 
     fun text(filename: String) = sourcePath.resolve(filename).readText()
 
-    @Suppress("UNNECESSARY_NOT_NULL_ASSERTION")
-    fun path(filename: String) = sourcePath.resolve(filename)!!
+    fun path(filename: String): Path = sourcePath.resolve(filename)
 
     fun cd(dir: String) = Source(sourcePath.resolve(dir))
 

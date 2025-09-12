@@ -6,13 +6,13 @@ import java.util.regex.Pattern.DOTALL
 import java.util.regex.Pattern.compile
 
 // language=regexp
-private const val IDENTIFIER = "[a-zA-Z_][a-zA-Z0-9-_]*"
+private const val identifier = "[a-zA-Z_][a-zA-Z0-9-_]*"
 
 // language=regexp
-private const val QUALIFIED_IDENTIFIER = "($IDENTIFIER\\.)*$IDENTIFIER"
+private const val qualifiedIdentifier = "($identifier\\.)*$identifier"
 
-private const val TYPED_IDENTIFIER = "$IDENTIFIER\\s*"
-private const val TYPED_ARGUMENT_LIST = "($TYPED_IDENTIFIER?)|($TYPED_IDENTIFIER\\s*,\\s*)"
+private const val typedIdentifier = "$identifier\\s*"
+private const val typedArgList = "($typedIdentifier?)|($typedIdentifier\\s*,\\s*)"
 private val brackets = generateNestedPattern()
 
 object Prism_qml
@@ -34,11 +34,11 @@ fun createQmlGrammar(prism4j: Prism4j): Grammar {
         token(
             "obj-property",
             pattern(
-                compile("$IDENTIFIER\\s*:\\s*$QUALIFIED_IDENTIFIER\\s*\\{"), false, false, null, grammar(
+                compile("$identifier\\s*:\\s*$qualifiedIdentifier\\s*\\{"), false, false, null, grammar(
                     "obj-property-inside",
-                    token("property", pattern(compile("^$IDENTIFIER"))),
-                    token("module", pattern(compile("$IDENTIFIER(?=\\s*\\.)"))),
-                    token("class-name", pattern(compile(IDENTIFIER))),
+                    token("property", pattern(compile("^$identifier"))),
+                    token("module", pattern(compile("$identifier(?=\\s*\\.)"))),
+                    token("class-name", pattern(compile(identifier))),
                     token("punctuation", pattern(compile("[.:{}]"))),
                 )
             ),
@@ -46,19 +46,19 @@ fun createQmlGrammar(prism4j: Prism4j): Grammar {
         token(
             "js-multiline-property",
             pattern(
-                compile("(?<=$IDENTIFIER\\s*:\\s*\\{)$brackets(?=\\})", DOTALL), false, true, null, javascript
+                compile("(?<=$identifier\\s*:\\s*\\{)$brackets(?=\\})", DOTALL), false, true, null, javascript
             ),
         ),
         token(
             "js-property",
             pattern(
-                compile("$IDENTIFIER(?=\\s*:\\s*.*[\\n;])"), false, true, "property", javascript
+                compile("$identifier(?=\\s*:\\s*.*[\\n;])"), false, true, "property", javascript
             ),
         ),
         token(
             "js-unmatched",
             pattern(
-                compile("(?<=$IDENTIFIER\\s*:\\s*).*(?=[\\n;])"), false, true, "identifier", javascript
+                compile("(?<=$identifier\\s*:\\s*).*(?=[\\n;])"), false, true, "identifier", javascript
             ),
         ),
         token(
@@ -67,27 +67,27 @@ fun createQmlGrammar(prism4j: Prism4j): Grammar {
 
         token(
             "property-alias-declaration-type",
-            pattern(compile("(?<=property\\s+)alias(?=\\s+$IDENTIFIER)"), false, false, "keyword")
+            pattern(compile("(?<=property\\s+)alias(?=\\s+$identifier)"), false, false, "keyword")
         ),
         token(
             "property-declaration-type", pattern(
-                compile("(?<=property\\s+)$IDENTIFIER(?=\\s+$IDENTIFIER)"), false, false, "class-name"
+                compile("(?<=property\\s+)$identifier(?=\\s+$identifier)"), false, false, "class-name"
             )
         ),
         token(
             "property-declaration", pattern(
-                compile("(?<=property\\s+$IDENTIFIER\\s+)$IDENTIFIER"), false, true, "property"
+                compile("(?<=property\\s+$identifier\\s+)$identifier"), false, true, "property"
             )
         ),
 
         token(
             "signal-declaration", pattern(
-                compile("(?<=signal\\s+)$IDENTIFIER(?=\\($TYPED_ARGUMENT_LIST\\))"), false, true, "property"
+                compile("(?<=signal\\s+)$identifier(?=\\($typedArgList\\))"), false, true, "property"
             )
         ),
         token(
             "signal-declaration", pattern(
-                compile("(?<=signal\\s+)$IDENTIFIER(?=\\((${TYPED_IDENTIFIER}?)|(${TYPED_IDENTIFIER}\\s*,\\s*)\\))"),
+                compile("(?<=signal\\s+)$identifier(?=\\((${typedIdentifier}?)|(${typedIdentifier}\\s*,\\s*)\\))"),
                 false,
                 true,
                 "property"
@@ -99,8 +99,8 @@ fun createQmlGrammar(prism4j: Prism4j): Grammar {
             pattern(compile("import|alias|as|true|false|default|property|var|readonly|signal|function|double|real|pragma"))
         ),
         token("punctuation", pattern(compile("[.:{}]"), false, false)),
-        token("module", pattern(compile("$IDENTIFIER(?=\\s*\\.)"), false, true)),
-        token("class-name", pattern(compile(IDENTIFIER))),
+        token("module", pattern(compile("$identifier(?=\\s*\\.)"), false, true)),
+        token("class-name", pattern(compile(identifier))),
     )
 
     return qml

@@ -1,7 +1,7 @@
 package dev.fishies.coho
 
 import dev.fishies.coho.core.TerminalColor
-import dev.fishies.coho.core.RESET
+import dev.fishies.coho.core.reset
 import dev.fishies.coho.core.fg
 import dev.fishies.coho.core.info
 import java.nio.file.Path
@@ -42,14 +42,14 @@ abstract class Element(val name: String) {
 
     private fun Duration?.color() = when (this) {
         null -> ""
-        in Duration.ZERO..<10.milliseconds -> fg(TerminalColor.GREEN)
-        in 10.milliseconds..<100.milliseconds -> fg(TerminalColor.YELLOW)
-        in 100.milliseconds..Duration.INFINITE -> fg(TerminalColor.RED)
-        else -> fg(TerminalColor.CYAN)
+        in Duration.ZERO..<10.milliseconds -> fg(TerminalColor.Green)
+        in 10.milliseconds..<100.milliseconds -> fg(TerminalColor.Yellow)
+        in 100.milliseconds..Duration.INFINITE -> fg(TerminalColor.Red)
+        else -> fg(TerminalColor.Cyan)
     }
 
     protected val prefix
-        get() = if (executionTime != null) "${executionTime.color()}(${executionTime})${RESET} " else ""
+        get() = if (executionTime != null) "${executionTime.color()}(${executionTime})${reset} " else ""
 
     override fun toString() = "$prefix$name (${this::class.simpleName})"
 

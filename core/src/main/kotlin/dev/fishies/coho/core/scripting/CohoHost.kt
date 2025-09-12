@@ -1,7 +1,7 @@
 package dev.fishies.coho.core.scripting
 
 import dev.fishies.coho.core.TerminalColor
-import dev.fishies.coho.core.RESET
+import dev.fishies.coho.core.reset
 import dev.fishies.coho.core.err
 import dev.fishies.coho.core.fg
 import dev.fishies.coho.core.info
@@ -16,11 +16,11 @@ import kotlin.script.experimental.jvmhost.createJvmCompilationConfigurationFromT
 
 private val ScriptDiagnostic.Severity.fgColor
     get() = when (this) {
-        ScriptDiagnostic.Severity.DEBUG -> TerminalColor.DEFAULT
-        ScriptDiagnostic.Severity.INFO -> TerminalColor.DEFAULT
-        ScriptDiagnostic.Severity.WARNING -> TerminalColor.YELLOW
-        ScriptDiagnostic.Severity.ERROR -> TerminalColor.RED
-        ScriptDiagnostic.Severity.FATAL -> TerminalColor.RED
+        ScriptDiagnostic.Severity.DEBUG -> TerminalColor.Default
+        ScriptDiagnostic.Severity.INFO -> TerminalColor.Default
+        ScriptDiagnostic.Severity.WARNING -> TerminalColor.Yellow
+        ScriptDiagnostic.Severity.ERROR -> TerminalColor.Red
+        ScriptDiagnostic.Severity.FATAL -> TerminalColor.Red
     }
 
 private fun formatDiagnostic(sourceCode: SourceCode, diagnostic: ScriptDiagnostic, printer: (String) -> Unit) =
@@ -61,7 +61,7 @@ private fun formatDiagnostic(sourceCode: SourceCode, diagnostic: ScriptDiagnosti
 
             // printer("${" ".repeat(prefix.length + column - 1 - shift)}${fg(diagnostic.severity.color)}${"^".repeat(width)}${RESET} $message")
 
-            printer("$spacing${fg(diagnostic.severity.fgColor)}^${"~".repeat(width - 1)}${RESET} $message")
+            printer("$spacing${fg(diagnostic.severity.fgColor)}^${"~".repeat(width - 1)}${reset} $message")
         }
     }
 

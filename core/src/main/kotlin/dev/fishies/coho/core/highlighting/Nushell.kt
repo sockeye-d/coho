@@ -5,9 +5,9 @@ import io.noties.prism4j.Prism4j.*
 import java.util.regex.Pattern.MULTILINE
 import java.util.regex.Pattern.compile
 
-private const val IDENTIFIER = "[a-zA-Z_][a-zA-Z0-9-_]*"
+private const val identifier = "[a-zA-Z_][a-zA-Z0-9-_]*"
 // language=
-private const val BUILTINS = "debug experimental-options|str screaming-snake-case|help pipe-and-redirect|co" +
+private const val builtins = "debug experimental-options|str screaming-snake-case|help pipe-and-redirect|co" +
         "mmandline set-cursor|commandline get-cursor|keybindings default|scope engine-stats|keybindings listen|date l" +
         "ist-timezone|config use-colors|bytes starts-with|attr search-terms|path relative-to|keybindings list|encode " +
         "base32hex|decode base32hex|date to-timezone|commandline edit|url split-query|url build-query|str starts-with" +
@@ -52,10 +52,10 @@ fun createNushellGrammar(): Grammar {
         "argument-list",
         token(
             "argument",
-            pattern(compile("(?<=,\\s*(?:\\.\\s*\\.\\s*\\.\\s*)?)$IDENTIFIER")),
-            pattern(compile("(?<=^\\s*)$IDENTIFIER"))
+            pattern(compile("(?<=,\\s*(?:\\.\\s*\\.\\s*\\.\\s*)?)$identifier")),
+            pattern(compile("(?<=^\\s*)$identifier"))
         ),
-        token("declaration-type", pattern(compile("(?<=:\\s*)$IDENTIFIER"), false, false, "class-name")),
+        token("declaration-type", pattern(compile("(?<=:\\s*)$identifier"), false, false, "class-name")),
         token("punctuation", pattern(compile("[,:.=]"))),
     )
     val nu = grammar(
@@ -65,7 +65,7 @@ fun createNushellGrammar(): Grammar {
         token("interpolated-string"),
         token("double-quote-string", pattern(compile("\"[^\"]*?\""), false, true, "string")),
         token("raw-string", pattern(compile("r(#+)'.*?'\\1"), false, true, "string")),
-        token("variable", pattern(compile("\\$$IDENTIFIER(.$IDENTIFIER)*"))),
+        token("variable", pattern(compile("\\$$identifier(.$identifier)*"))),
         token(
             "number",
             pattern(compile("\\d+(\\.\\d+)?")),
@@ -74,16 +74,16 @@ fun createNushellGrammar(): Grammar {
             pattern(compile("0b[0-1]+")),
         ),
         token(
-            "variable-declaration", pattern(compile("(?<=(?:let|mut)\\s+)$IDENTIFIER"), false, false, "variable")
+            "variable-declaration", pattern(compile("(?<=(?:let|mut)\\s+)$identifier"), false, false, "variable")
         ),
         token(
             "argument-declaration",
             pattern(compile("(?<=\\{\\s*\\|).*?(?=\\|)"), false, true, null, argumentList),
-            pattern(compile("(?<=def\\s+$IDENTIFIER\\s+\\[).*?(?=]\\s+\\{)"), false, true, null, argumentList),
-            pattern(compile("$IDENTIFIER(?=\\s*:)"), false, true, "argument"),
+            pattern(compile("(?<=def\\s+$identifier\\s+\\[).*?(?=]\\s+\\{)"), false, true, null, argumentList),
+            pattern(compile("$identifier(?=\\s*:)"), false, true, "argument"),
         ),
         token(
-            "declaration-type", pattern(compile("(?<=:\\s*)$IDENTIFIER"), false, false, "class-name")
+            "declaration-type", pattern(compile("(?<=:\\s*)$identifier"), false, false, "class-name")
         ),
         token(
             "argument", pattern(compile("(?<=^|\\s)-+[\\w-]+(?=$|\\s)"))
@@ -97,14 +97,14 @@ fun createNushellGrammar(): Grammar {
             )
         ),
         token(
-            "if-command", pattern(compile("(?<=if\\s*\\(?)$IDENTIFIER"), false, false, "function")
+            "if-command", pattern(compile("(?<=if\\s*\\(?)$identifier"), false, false, "function")
         ),
         token(
             "keyword",
             pattern(compile("\\b(?:export module|export extern|overlay hide|export const|export alias|overlay use|overlay new|export use|export def|plugin use|source-env|export-env|continue|overlay|export|source|return|module|extern|where|break|while|const|alias|match|false|null|hide|loop|else|true|mut|let|for|use|def|try|if)\\b"))
         ),
         token(
-            "builtin-function", pattern(compile(BUILTINS), false, false, "function")
+            "builtin-function", pattern(compile(builtins), false, false, "function")
         ),
         token(
             "command",

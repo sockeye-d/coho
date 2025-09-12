@@ -7,10 +7,10 @@ import java.nio.file.Path
 /**
  * @suppress
  */
-class HTMLFile(path: Path) : CopyFile(path)
+class HtmlFile(path: Path) : CopyFile(path)
 
 /**
  * Copy an untemplated HTML file from the source to the destination.
  */
 
-fun OutputPath.html(source: Path) = children.add(HTMLFile(source))
+fun OutputPath.html(source: Path) = children.add(HtmlFile(source))

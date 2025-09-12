@@ -11,7 +11,7 @@ import kotlin.io.path.*
 /**
  * @suppress
  */
-class KtHTMLFile(val path: Path, val context: Map<String, Any?>) : Element(path.name) {
+class KtHtmlFile(val path: Path, val context: Map<String, Any?>) : Element(path.name) {
 
     override fun _generate(location: Path): List<Path> = listOf(location.resolve(name).apply {
         writeText(templateString(path.readText(), { err("No closing tag found in file $path") }) {
@@ -40,4 +40,4 @@ class KtHTMLFile(val path: Path, val context: Map<String, Any?>) : Element(path.
  * ```
  * You can pass global variables into the templates with [context].
  */
-fun OutputPath.ktHtml(source: Path, context: Map<String, Any?> = emptyMap()) = children.add(KtHTMLFile(source, context))
+fun OutputPath.ktHtml(source: Path, context: Map<String, Any?> = emptyMap()) = children.add(KtHtmlFile(source, context))

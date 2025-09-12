@@ -3,7 +3,7 @@ package dev.fishies.coho
 import dev.fishies.coho.core.*
 import dev.fishies.coho.core.highlighting.prism
 import dev.fishies.coho.core.scripting.eval
-import dev.fishies.coho.html.KtHTMLFile
+import dev.fishies.coho.html.KtHtmlFile
 import io.noties.prism4j.AbsVisitor
 import io.noties.prism4j.Prism4j
 import org.apache.commons.text.StringEscapeUtils
@@ -102,44 +102,44 @@ private class HTMLVisitor(val sb: StringBuilder, val language: String) : AbsVisi
 private class ANSIVisitor(val sb: StringBuilder, val language: String) : AbsVisitor() {
     private val String.color: String
         get() = when (this) {
-            "keyword" -> fg(TerminalColor.MAGENTA)
-            "function" -> ITALIC + fg(TerminalColor.BLUE)
-            "number" -> fg(TerminalColor.YELLOW)
-            "operator" -> fg(TerminalColor.CYAN)
-            "comment" -> fg(TerminalColor.DEFAULT)
-            "text" -> fg(TerminalColor.DEFAULT)
-            "annotation" -> fg(TerminalColor.YELLOW)
-            "punctuation" -> fg(TerminalColor.DEFAULT)
-            "string" -> fg(TerminalColor.GREEN)
-            "raw-string" -> fg(TerminalColor.GREEN)
-            "label" -> fg(TerminalColor.DEFAULT)
-            "class-name" -> fg(TerminalColor.YELLOW)
-            "directive" -> fg(TerminalColor.CYAN)
-            "boolean" -> fg(TerminalColor.MAGENTA)
-            "interpolation" -> fg(TerminalColor.RED)
-            "delimiter" -> fg(TerminalColor.MAGENTA)
-            "attr-name" -> fg(TerminalColor.YELLOW)
-            "cdata" -> fg(TerminalColor.RED)
-            "entity" -> ITALIC + fg(TerminalColor.RED)
-            "prolog" -> fg(TerminalColor.RED)
-            "rule" -> ITALIC + fg(TerminalColor.RED)
-            "selector" -> fg(TerminalColor.CYAN)
-            "property" -> fg(TerminalColor.BLUE)
-            "identifier" -> fg(TerminalColor.DEFAULT)
-            "module" -> fg(TerminalColor.GREEN)
-            "bold" -> BOLD
-            "italic" -> ITALIC
-            else -> RESET
+            "keyword" -> fg(TerminalColor.Magenta)
+            "function" -> italic + fg(TerminalColor.Blue)
+            "number" -> fg(TerminalColor.Yellow)
+            "operator" -> fg(TerminalColor.Cyan)
+            "comment" -> fg(TerminalColor.Default)
+            "text" -> fg(TerminalColor.Default)
+            "annotation" -> fg(TerminalColor.Yellow)
+            "punctuation" -> fg(TerminalColor.Default)
+            "string" -> fg(TerminalColor.Green)
+            "raw-string" -> fg(TerminalColor.Green)
+            "label" -> fg(TerminalColor.Default)
+            "class-name" -> fg(TerminalColor.Yellow)
+            "directive" -> fg(TerminalColor.Cyan)
+            "boolean" -> fg(TerminalColor.Magenta)
+            "interpolation" -> fg(TerminalColor.Red)
+            "delimiter" -> fg(TerminalColor.Magenta)
+            "attr-name" -> fg(TerminalColor.Yellow)
+            "cdata" -> fg(TerminalColor.Red)
+            "entity" -> italic + fg(TerminalColor.Red)
+            "prolog" -> fg(TerminalColor.Red)
+            "rule" -> italic + fg(TerminalColor.Red)
+            "selector" -> fg(TerminalColor.Cyan)
+            "property" -> fg(TerminalColor.Blue)
+            "identifier" -> fg(TerminalColor.Default)
+            "module" -> fg(TerminalColor.Green)
+            "bold" -> bold
+            "italic" -> italic
+            else -> reset
         }
 
     override fun visitText(text: Prism4j.Text) {
-        sb.append(RESET + text.literal())
+        sb.append(reset + text.literal())
     }
 
     override fun visitSyntax(syntax: Prism4j.Syntax) {
         val firstChild = syntax.children().first()
         if (syntax.children().size == 1 && firstChild is Prism4j.Text) {
-            sb.append(syntax.type().color + firstChild.literal() + RESET)
+            sb.append(syntax.type().color + firstChild.literal() + reset)
         } else {
             visit(syntax.children())
         }
@@ -180,7 +180,7 @@ private fun String.substr(startIndex: Int, endIndex: Int) =
  * @param name The name of the script to show in diagnostic messages.
  */
 fun runScript(kts: String, context: Map<String, Any?>, name: String? = null): String {
-    val fullContext = context + KtHTMLFile.Companion.globalContext
+    val fullContext = context + KtHtmlFile.Companion.globalContext
     if (kts.trim() in fullContext) {
         info("Simple replacement detected on $kts, not evaluating", verbose = true)
         return fullContext[kts.trim()].toString()

@@ -1,6 +1,6 @@
 package dev.fishies.coho.cli
 
-import dev.fishies.coho.core.ANSI
+import dev.fishies.coho.core.Ansi
 import dev.fishies.coho.Element
 import dev.fishies.coho.RootPath
 import dev.fishies.coho.core.err
@@ -63,7 +63,7 @@ fun main(args: Array<String>) {
     }
     parser.subcommands(serve)
     parser.parse(args)
-    ANSI.showVerbose = verbose
+    Ansi.showVerbose = verbose
     Element.showProgress = !noProgress
 
     if (create) {
@@ -78,10 +78,7 @@ fun main(args: Array<String>) {
 
     note("Evaluating $cohoScriptPath...")
     val evalTimer = TimeSource.Monotonic.markNow()
-    var structure = build(cohoScriptPath)
-    @Suppress("FoldInitializerAndIfToElvis", "RedundantSuppression") if (structure == null) {
-        return
-    }
+    val structure = build(cohoScriptPath) ?: return
     pos("Evaluation complete in ${evalTimer.elapsedNow()}")
 
     note("Building...")
@@ -130,17 +127,15 @@ fun main(args: Array<String>) {
         }
 
         // """atomic operations"""
-        val result = attempt({ structure.generate(tempBuildPath) }) { ex: Exception ->
+        try {
+            structure.generate(tempBuildPath)
+        } catch (ex: Exception) {
             err("Failed to generate file ${ex.message} (${ex::class.simpleName})")
             tempBuildPath.deleteRecursively()
             return@watch false
         }
         if (debugTimes) {
             info(structure.toString())
-        }
-        if (result == null) {
-            tempBuildPath.deleteRecursively()
-            return@watch false
         }
         buildPath.deleteRecursively()
         tempBuildPath.copyToRecursively(buildPath, followLinks = true, overwrite = true)
@@ -206,7 +201,7 @@ private inline fun <T, reified E : Exception> attempt(action: () -> T, catchActi
     }
 }
 
-private val r by lazy { object {}::class.java }
+private val resources by lazy { object {}::class.java }
 
 private fun copyTemplateFile(resource: String, dest: Path, force: Boolean): Unit? {
     if (dest.exists()) {
@@ -218,7 +213,7 @@ private fun copyTemplateFile(resource: String, dest: Path, force: Boolean): Unit
             return null
         }
     }
-    dest.writeBytes(r.getResource(resource)!!.readBytes())
+    dest.writeBytes(resources.getResource(resource)!!.readBytes())
     pos("Created $dest")
     return Unit
 }
