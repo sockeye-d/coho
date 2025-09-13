@@ -14,7 +14,8 @@ import kotlin.time.TimeSource
 /**
  * @suppress
  */
-class RootPath(sourceDirectory: Source, buildPath: Path) : OutputPath("root", sourceDirectory, buildPath, { html: String -> "<!DOCTYPE HTML><html>$html</html>" }) {
+class RootPath(sourceDirectory: Source, buildPath: Path) :
+    OutputPath("root", sourceDirectory, buildPath, { html: String -> "<!DOCTYPE HTML><html>$html</html>" }) {
     override fun _generate(location: Path): List<Path> {
         location.createDirectory()
         for (child in children) {
@@ -56,11 +57,9 @@ class RootPath(sourceDirectory: Source, buildPath: Path) : OutputPath("root", so
 
         walkDir(source.sourcePath)
 
-        watchLoop@while (true) {
-            // val key = watcher.getKey { return }
+        watchLoop@ while (true) { // val key = watcher.getKey { return }
             var key: WatchKey? = null
-            while (key == null) {
-                // delay(50.milliseconds)
+            while (key == null) { // delay(50.milliseconds)
                 Thread.sleep(50)
                 if (exit.load()) break@watchLoop
                 key = watcher.poll()
@@ -77,7 +76,15 @@ class RootPath(sourceDirectory: Source, buildPath: Path) : OutputPath("root", so
                 val filename = event.context() as Path
                 val fullPath = dir.resolve(filename)
 
-                if (fullPath.isHidden() || fullPath.name.endsWith("~")) {
+                if (fullPath.notExists()) {
+                    continue
+                }
+
+                if (fullPath.isHidden()) {
+                    continue
+                }
+
+                if (fullPath.name.endsWith("~") || fullPath.name.startsWith(".")) {
                     continue
                 }
 
@@ -127,7 +134,8 @@ class RootPath(sourceDirectory: Source, buildPath: Path) : OutputPath("root", so
  * Represents the root directory.
  * Use [path] to define subdirectories.
  */
-fun root(sourceDirectory: Source, block: RootPath.() -> Unit) = RootPath(sourceDirectory, RootPath.rootBuildPath).apply { block() }
+fun root(sourceDirectory: Source, block: RootPath.() -> Unit) =
+    RootPath(sourceDirectory, RootPath.rootBuildPath).apply { block() }
 
 /**
  * Represents the root directory.
