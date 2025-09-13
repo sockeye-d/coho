@@ -62,3 +62,7 @@ abstract class Element(val name: String) {
         var showProgress = false
     }
 }
+
+fun anonymous(name: String = "<anonymous>", f: (location: Path) -> List<Path>) = object : Element(name) {
+    override fun _generate(location: Path) = f(location)
+}

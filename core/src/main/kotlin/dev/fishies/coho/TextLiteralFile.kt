@@ -12,6 +12,8 @@ class TextLiteralFile(destination: String, val content: String) : Element(destin
 
 /**
  * Output [content] to [destination].
+ *
  * Useful for small text.
  */
-fun OutputPath.text(content: String, destination: String = "text") = children.add(TextLiteralFile(destination, content))
+fun OutputPath.text(content: String, destination: String) =
+    children.add(anonymous(name = destination) { listOf(it.resolve(destination).apply { toFile().writeText(content) }) })

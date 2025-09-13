@@ -3,11 +3,11 @@ package dev.fishies.coho.cli
 import dev.fishies.coho.core.Ansi
 import dev.fishies.coho.Element
 import dev.fishies.coho.RootPath
+import dev.fishies.coho.core.build
 import dev.fishies.coho.core.err
 import dev.fishies.coho.core.info
 import dev.fishies.coho.core.note
 import dev.fishies.coho.core.pos
-import dev.fishies.coho.core.scripting.eval
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import kotlinx.cli.*
@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import java.net.BindException
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardWatchEventKinds
+import java.nio.file.WatchKey
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -116,10 +118,10 @@ fun main(args: Array<String>) {
         RootPath.rootBuildPath = tempBuildPath
         pos(
             "Evaluation complete in ${
-            measureTime {
-                structure = build(cohoScriptPath)
-            }
-        }")
+                measureTime {
+                    structure = build(cohoScriptPath)
+                }
+            }")
 
         if (structure == null) {
             tempBuildPath.deleteRecursively()
@@ -181,14 +183,6 @@ private object PathArgType : ArgType<Path>(true) {
     override fun convert(value: kotlin.String, name: kotlin.String): Path = Paths.get(value)
 }
 
-private fun build(ktsPath: Path): RootPath? {
-    val structure = eval(ktsPath)
-    if (structure !is RootPath) {
-        return null
-    }
-    return structure
-}
-
 private inline fun <T, reified E : Exception> attempt(action: () -> T, catchAction: (e: E) -> Unit): T? {
     try {
         return action()
@@ -227,4 +221,101 @@ private fun createProject(scriptPath: Path, force: Boolean): Unit? {
     copyTemplateFile("/template/index.md", force) ?: return null
     copyTemplateFile("/template/style.css", force) ?: return null
     return Unit
+}
+
+@OptIn(ExperimentalAtomicApi::class)
+fun RootPath.watch(ignorePaths: Set<Path>, exit: AtomicBoolean, rebuild: () -> Boolean) {
+    val watcher = source.sourcePath.fileSystem.newWatchService()
+    val keys = mutableMapOf<WatchKey, Path>()
+
+    val watchDir: (Path) -> Unit = {
+        keys[it.register(
+            watcher,
+            StandardWatchEventKinds.ENTRY_CREATE,
+            StandardWatchEventKinds.ENTRY_DELETE,
+            StandardWatchEventKinds.ENTRY_MODIFY
+        )] = it
+    }
+
+    fun walkDir(dir: Path) {
+        watchDir(dir)
+        dir.listDirectoryEntries().filter {
+            it.isDirectory() && !it.isHidden() && it.normalize() !in ignorePaths
+        }.forEach {
+            walkDir(it)
+        }
+    }
+
+    walkDir(source.sourcePath)
+
+    watchLoop@ while (true) { // val key = watcher.getKey { return }
+        var key: WatchKey? = null
+        while (key == null) { // delay(50.milliseconds)
+            Thread.sleep(50)
+            if (exit.load()) break@watchLoop
+            key = watcher.poll()
+        }
+        val dir = keys[key] ?: error("hi")
+
+        for (event in key.pollEvents()) {
+            val kind = event.kind()
+
+            if (kind == StandardWatchEventKinds.OVERFLOW) {
+                continue
+            }
+
+            val filename = event.context() as Path
+            val fullPath = dir.resolve(filename)
+
+            if (fullPath.notExists()) {
+                continue
+            }
+
+            if (fullPath.isDirectory()) {
+                continue
+            }
+
+            if (fullPath.isHidden()) {
+                continue
+            }
+
+            if (fullPath.name.endsWith("~") || fullPath.name.startsWith(".")) {
+                continue
+            }
+
+            if (fullPath.normalize() in ignorePaths) {
+                continue
+            }
+
+            info(
+                "$fullPath ${
+                    when (kind) {
+                        StandardWatchEventKinds.ENTRY_CREATE -> "created"
+                        StandardWatchEventKinds.ENTRY_MODIFY -> "modified"
+                        StandardWatchEventKinds.ENTRY_DELETE -> "delete"
+                        else -> "???"
+                    }
+                }, rebuilding"
+            )
+
+            val startTime = TimeSource.Monotonic.markNow()
+            if (rebuild()) {
+                pos("Rebuild complete in ${startTime.elapsedNow()}")
+            } else {
+                err("Rebuild failed")
+            }
+
+            if (kind == StandardWatchEventKinds.ENTRY_CREATE && fullPath.isDirectory()) {
+                watchDir(fullPath)
+            }
+        }
+
+        val valid = key.reset()
+        if (!valid) {
+            keys.remove(key)
+            if (keys.isEmpty()) break
+        }
+    }
+
+    watcher.close()
 }

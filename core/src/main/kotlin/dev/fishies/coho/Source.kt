@@ -7,7 +7,7 @@ import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.readText
 
 class Source(val sourcePath: Path) : Iterable<Path> {
-    constructor(path: String) : this(Paths.get(path))
+    constructor(path: String, relativeTo: Path) : this(relativeTo.resolve(path))
 
     fun text(filename: String) = sourcePath.resolve(filename).readText()
 

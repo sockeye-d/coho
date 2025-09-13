@@ -43,35 +43,45 @@ private fun formatDiagnostic(sourceCode: SourceCode, diagnostic: ScriptDiagnosti
             printer("$spacing^ $message")
         } else {
             val width = end.col - location.start.col
-
-            // error marking graveyard kept for posterity
-            // printer("${" ".repeat(prefix.length + column - 1 - shift)}${fg(Color.Red)}${"─".repeat(width - 1)}╮$RESET") // printer("${" ".repeat(prefix.length + column - 2 - shift + width)}${fg(Color.Red)}╰$RESET $message")
-
-            // printer("${" ".repeat(prefix.length + column - 1 - shift)}${fg(Color.Red)}${"─".repeat(floor(width / 2.0).toInt())}┬${"─".repeat(ceil(width / 2.0).toInt() - 1)}$RESET")
-            // printer("${" ".repeat(prefix.length + column - 1 - shift + width / 2)}${fg(Color.Red)}╰$RESET $message")
-
-            // printer("${" ".repeat(prefix.length + column - 1 - shift)}${fg(Color.Red)}┬${"─".repeat(width - 1)}$RESET")
-            // printer("${" ".repeat(prefix.length + column - 1 - shift)}${fg(Color.Red)}╰$RESET $message")
-
-            // if (width >= 2) {
-            //     printer("${" ".repeat(prefix.length + column - 1 - shift)}${fg(Color.Red)}└${"─".repeat(width - 2)}┴╴$RESET$message")
-            // } else {
-            //     printer("${" ".repeat(prefix.length + column - 1 - shift)}${fg(Color.Red)}^$RESET $message")
-            // }
-
-            // printer("${" ".repeat(prefix.length + column - 1 - shift)}${fg(diagnostic.severity.color)}${"^".repeat(width)}${RESET} $message")
-
             printer("$spacing${fg(diagnostic.severity.fgColor)}^${"~".repeat(width - 1)}${reset} $message")
         }
     }
 
 private val host by lazy { BasicJvmScriptingHost() }
 
+private fun unwrapResult(result: ResultWithDiagnostics<EvaluationResult>): Any? =
+    when (result) {
+        is ResultWithDiagnostics.Failure -> {
+            err("Evaluation failed")
+            null
+        }
+
+        is ResultWithDiagnostics.Success<EvaluationResult> -> when (result.value.returnValue) {
+            ResultValue.NotEvaluated -> null
+            is ResultValue.Error -> {
+                val error = (result.value.returnValue as ResultValue.Error).error
+                err("Evaluation resulted in error $error")
+                err(error.stackTraceToString().prependIndent())
+                null
+            }
+
+            is ResultValue.Unit -> {
+                err("Evaluation ended in a statement")
+                null
+            }
+
+            is ResultValue.Value -> (result.value.returnValue as ResultValue.Value).value
+        }
+    }
+
 /**
  * Evaluate the Kotlin [source] with the given [context].
- * @return Whatever the script returns, or `null` if there wasn't a value.
+ * @return The result of evaluation
  */
-fun eval(source: SourceCode, context: Map<String, Any?>): Any? {
+fun eval(
+    source: SourceCode,
+    context: Map<String, Any?>,
+): ResultWithDiagnostics<EvaluationResult> {
     val result = host.eval(source, createJvmCompilationConfigurationFromTemplate<CohoScript> {
         for ((key, value) in context) {
             val ktType = if (value == null) KotlinType(Any::class, isNullable = true) else KotlinType(value::class)
@@ -93,40 +103,20 @@ fun eval(source: SourceCode, context: Map<String, Any?>): Any? {
     }
     if (result.reports.any { it.severity == ScriptDiagnostic.Severity.FATAL }) {
         err("Had fatal script diagnostics")
-        return null
+        return result
     }
-    return when (result) {
-        is ResultWithDiagnostics.Failure -> {
-            err("Evaluation failed")
-            null
-        }
-
-        is ResultWithDiagnostics.Success<EvaluationResult> -> when (result.value.returnValue) {
-            ResultValue.NotEvaluated -> null
-            is ResultValue.Error -> {
-                err("Evaluation resulted in error ${result.value.returnValue}")
-                null
-            }
-
-            is ResultValue.Unit -> {
-                err("Evaluation ended in a statement")
-                null
-            }
-
-            is ResultValue.Value -> (result.value.returnValue as ResultValue.Value).value
-        }
-    }
+    return result
 }
 
 /**
  * Evaluate the Kotlin script file at [script] with the given [context].
  * @return Whatever the script returns, or `null` if there wasn't a value.
  */
-fun eval(script: Path, context: Map<String, Any?> = emptyMap()) = eval(script.toFile().toScriptSource(), context)
+fun eval(script: Path, context: Map<String, Any?> = emptyMap()) = unwrapResult(eval(script.toFile().toScriptSource(), context))
 
 /**
  * Evaluate the Kotlin script string [script] with the given [context].
  * @return Whatever the script returns, or `null` if there wasn't a value.
  */
 fun eval(script: String, context: Map<String, Any?> = emptyMap(), name: String? = null) =
-    eval(script.toScriptSource(name), context)
+    unwrapResult(eval(script.toScriptSource(name), context))
