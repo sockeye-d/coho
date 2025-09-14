@@ -1,0 +1,55 @@
+#compdef coho
+
+_coho() {
+    local state line
+    typeset -A opt_args
+
+    _arguments -C \
+        '(-B --build-path)'{-B,--build-path}'[Path to the build directory]:path:_directories' \
+        '--verbose[Show extra information]' \
+        '--force[Force overwrite existing files to create a new coho project]' \
+        '--create[Create a new coho script file]' \
+        '--no-progress[Don'\''t show progress]' \
+        '--debug-times[Show execution times]' \
+        '1: :->first_arg' \
+        '*:: :->args' && return 0
+
+    case $state in
+        first_arg)
+            local -a alternatives
+            alternatives=(
+                'serve:Show a live-updating localhost webserver'
+            )
+            _describe 'commands' alternatives
+            _files -g "*.kts"
+            ;;
+        args)
+            case $line[1] in
+                serve)
+                    _arguments \
+                        '(-B --build-path)'{-B,--build-path}'[Path to the build directory]:path:_directories' \
+                        '--verbose[Show extra information]' \
+                        '--force[Force overwrite existing files to create a new coho project]' \
+                        '--create[Create a new coho script file]' \
+                        '--no-progress[Don'\''t show progress]' \
+                        '--debug-times[Show execution times]' \
+                        '--server-port[Integrated server port]:port:' \
+                        '--port-retry-count[How many times to try different ports]:count:' \
+                        '--no-reload-script[Don'\''t inject the hot reload script into HTML files]' \
+                        '1:coho script file:_files -g "*.kts"'
+                    ;;
+                *)
+                    _arguments \
+                        '(-B --build-path)'{-B,--build-path}'[Path to the build directory]:path:_directories' \
+                        '--verbose[Show extra information]' \
+                        '--force[Force overwrite existing files to create a new coho project]' \
+                        '--create[Create a new coho script file]' \
+                        '--no-progress[Don'\''t show progress]' \
+                        '--debug-times[Show execution times]'
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_coho "$@"

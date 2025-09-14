@@ -1,22 +1,14 @@
 package dev.fishies.coho.cli
 
-import dev.fishies.coho.core.Ansi
 import dev.fishies.coho.Element
 import dev.fishies.coho.RootPath
-import dev.fishies.coho.core.build
-import dev.fishies.coho.core.err
-import dev.fishies.coho.core.info
-import dev.fishies.coho.core.note
-import dev.fishies.coho.core.pos
+import dev.fishies.coho.core.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import kotlinx.cli.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.net.BindException
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.StandardWatchEventKinds
-import java.nio.file.WatchKey
+import java.nio.file.*
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -25,6 +17,11 @@ import kotlin.io.path.*
 import kotlin.system.exitProcess
 import kotlin.time.TimeSource
 import kotlin.time.measureTime
+
+@Suppress("unused")
+enum class Shell(val path: String) {
+    Nu("coho.nu"), Zsh("_coho"),
+}
 
 @OptIn(ExperimentalCli::class, ExperimentalPathApi::class, ExperimentalAtomicApi::class)
 fun main(args: Array<String>) {
@@ -63,8 +60,17 @@ fun main(args: Array<String>) {
             useServer = true
         }
     }
+    val shell by parser.option(
+        ArgType.Choice<Shell>(),
+        "print-shell-completions",
+        description = "Print shell completion scripts for various shells"
+    )
     parser.subcommands(serve)
     parser.parse(args)
+    if (shell != null) {
+        println(resources.getResource("/shell/${shell!!.path}")?.readText())
+        return
+    }
     Ansi.showVerbose = verbose
     Element.showProgress = !noProgress
 
@@ -118,10 +124,10 @@ fun main(args: Array<String>) {
         RootPath.rootBuildPath = tempBuildPath
         pos(
             "Evaluation complete in ${
-                measureTime {
-                    structure = build(cohoScriptPath)
-                }
-            }")
+            measureTime {
+                structure = build(cohoScriptPath)
+            }
+        }")
 
         if (structure == null) {
             tempBuildPath.deleteRecursively()
@@ -181,18 +187,6 @@ private object PathArgType : ArgType<Path>(true) {
         get() = "{ Path }"
 
     override fun convert(value: kotlin.String, name: kotlin.String): Path = Paths.get(value)
-}
-
-private inline fun <T, reified E : Exception> attempt(action: () -> T, catchAction: (e: E) -> Unit): T? {
-    try {
-        return action()
-    } catch (e: Exception) {
-        if (e !is E) {
-            throw e
-        }
-        catchAction(e)
-        return null
-    }
 }
 
 private val resources by lazy { object {}::class.java }
