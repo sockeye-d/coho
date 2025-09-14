@@ -35,6 +35,6 @@ tasks.shadowJar {
 
 sourceSets.main {
     resources {
-        exclude("**/build/*")
+        exclude("template/build")
     }
 }
