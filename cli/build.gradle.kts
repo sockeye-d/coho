@@ -32,3 +32,9 @@ tasks.shadowJar {
         include(dependency(libs.kt.reflect))
     }
 }
+
+sourceSets.main {
+    resources {
+        exclude("**/build/*")
+    }
+}

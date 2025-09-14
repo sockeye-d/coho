@@ -1,12 +1,8 @@
 package dev.fishies.coho.cli
 
-import dev.fishies.coho.core.Ansi
 import dev.fishies.coho.Element
 import dev.fishies.coho.RootPath
-import dev.fishies.coho.core.err
-import dev.fishies.coho.core.info
-import dev.fishies.coho.core.note
-import dev.fishies.coho.core.pos
+import dev.fishies.coho.core.*
 import dev.fishies.coho.core.scripting.eval
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -23,6 +19,11 @@ import kotlin.io.path.*
 import kotlin.system.exitProcess
 import kotlin.time.TimeSource
 import kotlin.time.measureTime
+
+enum class Shell(val path: String) {
+    Nu("coho.nu"),
+    Zsh("_coho"),
+}
 
 @OptIn(ExperimentalCli::class, ExperimentalPathApi::class, ExperimentalAtomicApi::class)
 fun main(args: Array<String>) {
@@ -61,8 +62,13 @@ fun main(args: Array<String>) {
             useServer = true
         }
     }
+    val shell by parser.option(ArgType.Choice<Shell>(), "print-shell-completions", description = "Print shell completion scripts for various shells")
     parser.subcommands(serve)
     parser.parse(args)
+    if (shell != null) {
+        println(resources.getResource("/shell/${shell!!.path}")?.readText())
+        return
+    }
     Ansi.showVerbose = verbose
     Element.showProgress = !noProgress
 
@@ -116,10 +122,10 @@ fun main(args: Array<String>) {
         RootPath.rootBuildPath = tempBuildPath
         pos(
             "Evaluation complete in ${
-            measureTime {
-                structure = build(cohoScriptPath)
-            }
-        }")
+                measureTime {
+                    structure = build(cohoScriptPath)
+                }
+            }")
 
         if (structure == null) {
             tempBuildPath.deleteRecursively()
