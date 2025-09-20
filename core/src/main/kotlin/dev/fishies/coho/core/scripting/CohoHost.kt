@@ -1,18 +1,24 @@
 package dev.fishies.coho.core.scripting
 
-import dev.fishies.coho.core.TerminalColor
-import dev.fishies.coho.core.reset
-import dev.fishies.coho.core.err
-import dev.fishies.coho.core.fg
-import dev.fishies.coho.core.info
-import dev.fishies.coho.core.note
+import dev.fishies.coho.OutputPath
+import dev.fishies.coho.core.*
 import dev.fishies.coho.highlightANSI
 import java.nio.file.Path
-import kotlin.collections.iterator
+import java.nio.file.Paths
+import kotlin.io.path.absolutePathString
+import kotlin.io.path.pathString
+import kotlin.io.path.readText
 import kotlin.script.experimental.api.*
+import kotlin.script.experimental.host.FileScriptSource
 import kotlin.script.experimental.host.toScriptSource
+import kotlin.script.experimental.jvm.JvmScriptEvaluationConfigurationBuilder.Companion.invoke
 import kotlin.script.experimental.jvmhost.BasicJvmScriptingHost
 import kotlin.script.experimental.jvmhost.createJvmCompilationConfigurationFromTemplate
+
+@Target(AnnotationTarget.FILE)
+@Repeatable
+@Retention(AnnotationRetention.SOURCE)
+annotation class Import
 
 private val ScriptDiagnostic.Severity.fgColor
     get() = when (this) {
@@ -43,46 +49,47 @@ private fun formatDiagnostic(sourceCode: SourceCode, diagnostic: ScriptDiagnosti
             printer("$spacing^ $message")
         } else {
             val width = end.col - location.start.col
-            printer("$spacing${fg(diagnostic.severity.fgColor)}^${"~".repeat(width - 1)}${reset} $message")
+            printer("$spacing${fg(diagnostic.severity.fgColor)}^${if (width == 0) "" else "~".repeat(width - 1)}${reset} $message")
         }
     }
 
 private val host by lazy { BasicJvmScriptingHost() }
 
-private fun unwrapResult(result: ResultWithDiagnostics<EvaluationResult>): Any? =
-    when (result) {
-        is ResultWithDiagnostics.Failure -> {
-            err("Evaluation failed")
+private fun unwrapResult(result: ResultWithDiagnostics<EvaluationResult>): Any? = when (result) {
+    is ResultWithDiagnostics.Failure -> {
+        null
+    }
+
+    is ResultWithDiagnostics.Success<EvaluationResult> -> when (result.value.returnValue) {
+        ResultValue.NotEvaluated -> null
+        is ResultValue.Error -> {
+            val error = (result.value.returnValue as ResultValue.Error).error
+            err("Evaluation resulted in error $error")
+            err(error.stackTraceToString().prependIndent())
             null
         }
 
-        is ResultWithDiagnostics.Success<EvaluationResult> -> when (result.value.returnValue) {
-            ResultValue.NotEvaluated -> null
-            is ResultValue.Error -> {
-                val error = (result.value.returnValue as ResultValue.Error).error
-                err("Evaluation resulted in error $error")
-                err(error.stackTraceToString().prependIndent())
-                null
-            }
-
-            is ResultValue.Unit -> {
-                err("Evaluation ended in a statement")
-                null
-            }
-
-            is ResultValue.Value -> (result.value.returnValue as ResultValue.Value).value
+        is ResultValue.Unit -> {
+            err("Evaluation ended in a statement")
+            null
         }
+
+        is ResultValue.Value -> (result.value.returnValue as ResultValue.Value).value
     }
+}
 
 /**
  * Evaluate the Kotlin [source] with the given [context].
  * @return The result of evaluation
  */
 fun eval(
-    source: SourceCode,
-    context: Map<String, Any?>,
+    source: SourceCode, context: Map<String, Any?>, includes: List<Path> = emptyList()
 ): ResultWithDiagnostics<EvaluationResult> {
-    val result = host.eval(source, createJvmCompilationConfigurationFromTemplate<CohoScript> {
+    val result = BasicJvmScriptingHost().eval(source, createJvmCompilationConfigurationFromTemplate<CohoScript> {
+        refineConfiguration {
+            onAnnotations(Import::class, handler = CohoImportAnnotationConfigurator(includes))
+        }
+
         for ((key, value) in context) {
             val ktType = if (value == null) KotlinType(Any::class, isNullable = true) else KotlinType(value::class)
             providedProperties(key to ktType)
@@ -108,15 +115,41 @@ fun eval(
     return result
 }
 
+private class CohoImportAnnotationConfigurator(private val includes: List<Path>) :
+    RefineScriptCompilationConfigurationHandler {
+        override fun invoke(context: ScriptConfigurationRefinementContext): ResultWithDiagnostics<ScriptCompilationConfiguration> {
+            return ScriptCompilationConfiguration(context.compilationConfiguration) {
+                this[importScripts] = includes.distinct().map { it.toFile().toScriptSource() }
+            }.asSuccess()
+        }
+    }
+
 /**
  * Evaluate the Kotlin script file at [script] with the given [context].
  * @return Whatever the script returns, or `null` if there wasn't a value.
  */
-fun eval(script: Path, context: Map<String, Any?> = emptyMap()) = unwrapResult(eval(script.toFile().toScriptSource(), context))
+fun eval(script: Path, context: Map<String, Any?> = emptyMap(), includes: List<Path> = emptyList()) =
+    unwrapResult(eval(script.toFile().toScriptSource(), context, includes))
+
+/**
+ * Evaluate the Kotlin script file at [script] with the given [context].
+ * @return Whatever the script returns, or `null` if there wasn't a value.
+ */
+fun OutputPath.eval(script: Path, context: Map<String, Any?> = emptyMap()) =
+    unwrapResult(eval(script.toFile().toScriptSource(), context, includes))
 
 /**
  * Evaluate the Kotlin script string [script] with the given [context].
  * @return Whatever the script returns, or `null` if there wasn't a value.
  */
-fun eval(script: String, context: Map<String, Any?> = emptyMap(), name: String? = null) =
-    unwrapResult(eval(script.toScriptSource(name), context))
+fun eval(
+    script: String, context: Map<String, Any?> = emptyMap(), name: String? = null, includes: List<Path> = emptyList()
+) = unwrapResult(eval(script.toScriptSource(name), context, includes))
+
+/**
+ * Evaluate the Kotlin script string [script] with the given [context].
+ * @return Whatever the script returns, or `null` if there wasn't a value.
+ */
+fun OutputPath.eval(
+    script: String, context: Map<String, Any?> = emptyMap(), name: String? = null
+) = unwrapResult(eval(script.toScriptSource(name), context, includes))

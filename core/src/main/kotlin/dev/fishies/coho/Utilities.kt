@@ -6,10 +6,12 @@ import dev.fishies.coho.core.scripting.eval
 import dev.fishies.coho.html.KtHtmlFile
 import io.noties.prism4j.AbsVisitor
 import io.noties.prism4j.Prism4j
+import net.mamoe.yamlkt.Yaml
 import org.apache.commons.text.StringEscapeUtils
 import java.nio.file.Path
 import kotlin.io.path.absolute
 import kotlin.io.path.pathString
+import kotlin.reflect.KClass
 import kotlin.time.measureTime
 
 /**
@@ -179,14 +181,24 @@ private fun String.substr(startIndex: Int, endIndex: Int) =
  * @param context The context (global variables) to give to that script.
  * @param name The name of the script to show in diagnostic messages.
  */
-fun runScript(kts: String, context: Map<String, Any?>, name: String? = null): String {
-    val fullContext = context + KtHtmlFile.Companion.globalContext
+fun runScript(kts: String, context: Map<String, Any?>, name: String? = null, includes: List<Path> = emptyList()): Any? {
+    val fullContext = context + KtHtmlFile.globalContext
     if (kts.trim() in fullContext) {
         info("Simple replacement detected on $kts, not evaluating", verbose = true)
         return fullContext[kts.trim()].toString()
     }
-    return eval(kts, fullContext, name).toString()
+    return eval(kts, fullContext, name, includes)
 }
+
+/**
+ * Run the given Kotlin script [kts] with [context].
+ *
+ * @param kts The script to run
+ * @param context The context (global variables) to give to that script.
+ * @param name The name of the script to show in diagnostic messages.
+ */
+fun OutputPath.runScript(kts: String, context: Map<String, Any?>, name: String? = null) =
+    runScript(kts, context, name, includes)
 
 /**
  * Template the given [string] string using [templateAction].
@@ -220,4 +232,30 @@ fun templateString(string: String, onErrorAction: () -> Unit, templateAction: (S
         builder.append(templateAction(cleanText))
     } while (openIndex > 0)
     return builder.toString()
+}
+
+/**
+ * Extract the frontmatter block from [srcText].
+ *
+ * @return the frontmatter data and the stripped text
+ */
+fun parseMarkdownFrontmatter(srcText: String): Pair<Map<String?, Any?>?, String> {
+    if (!srcText.startsWith("```")) {
+        return null to srcText
+    }
+    val startIndex = if (srcText.startsWith("```yaml")) "```yaml".length else "```".length
+    val nextSeparator = srcText.indexOf("```", startIndex)
+    if (nextSeparator == -1) {
+        return null to srcText
+    }
+
+    val frontmatterText = srcText.substring(startIndex, nextSeparator - 1)
+    val frontmatter = try {
+        Yaml.decodeMapFromString(frontmatterText)
+    } catch (e: IllegalArgumentException) {
+        err("Failed to parse frontmatter $frontmatterText (${e.message})")
+        null
+    }
+
+    return frontmatter to srcText.substring(nextSeparator + 4)
 }

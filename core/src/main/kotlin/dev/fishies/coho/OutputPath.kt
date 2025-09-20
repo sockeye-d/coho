@@ -21,7 +21,7 @@ import kotlin.script.experimental.host.toScriptSource
  * like [md] and [html], can be nested within an
  * [OutputPath] to specify the contents of that directory.
  */
-open class OutputPath(name: String, val source: Source, val buildPath: Path, var markdownTemplate: MarkdownTemplate) :
+open class OutputPath(name: String, val source: Source, val buildPath: Path, var markdownTemplate: MarkdownTemplate, var includes: List<Path>) :
     Element(name) {
     val children = mutableListOf<Element>()
 
@@ -59,8 +59,8 @@ open class OutputPath(name: String, val source: Source, val buildPath: Path, var
  * [OutputPath] to specify the contents of that directory.
  */
 fun OutputPath.path(
-    name: String, markdownTemplate: MarkdownTemplate = this.markdownTemplate, block: OutputPath.() -> Unit
-) = children.add(OutputPath(name, source.cd(name), buildPath.resolve(name), markdownTemplate).apply { block() })
+    name: String, markdownTemplate: MarkdownTemplate = this.markdownTemplate, includes: List<Path> = this.includes, block: OutputPath.() -> Unit
+) = children.add(OutputPath(name, source.cd(name), buildPath.resolve(name), markdownTemplate, includes).apply { block() })
 
 /**
  * Run [block] at build time.
@@ -74,8 +74,7 @@ fun OutputPath.run(name: String = "run", block: OutputPath.(location: Path) -> L
 
 fun OutputPath.include(path: Path, vararg parameters: Pair<String?, Any?>, functionName: String = "generate") {
     RootPath.scriptSourcePath = path
-    val result = eval(path.toFile().toScriptSource(), emptyMap())
-    when (result) {
+    when (val result = eval(path.toFile().toScriptSource(), emptyMap())) {
         is ResultWithDiagnostics.Failure -> {}
 
         is ResultWithDiagnostics.Success<EvaluationResult> -> when (result.value.returnValue) {

@@ -7,7 +7,7 @@ import kotlin.io.path.*
  * @suppress
  */
 class RootPath(sourceDirectory: Source, buildPath: Path) :
-    OutputPath("root", sourceDirectory, buildPath, { html: String -> "<!DOCTYPE HTML><html>$html</html>" }) {
+    OutputPath("root", sourceDirectory, buildPath, { html: String -> "<!DOCTYPE HTML><html>$html</html>" }, emptyList()) {
     override fun _generate(location: Path): List<Path> {
         location.createDirectory()
         for (child in children) {

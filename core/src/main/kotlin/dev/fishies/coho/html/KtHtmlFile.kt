@@ -7,15 +7,15 @@ import dev.fishies.coho.runScript
 import dev.fishies.coho.templateString
 import java.nio.file.Path
 import kotlin.io.path.*
+import kotlin.reflect.KClass
 
 /**
  * @suppress
  */
-class KtHtmlFile(val path: Path, val context: Map<String, Any?>) : Element(path.name) {
-
+class KtHtmlFile(val path: Path, val context: Map<String, Any?>, val includes: List<Path>) : Element(path.name) {
     override fun _generate(location: Path): List<Path> = listOf(location.resolve(name).apply {
         writeText(templateString(path.readText(), { err("No closing tag found in file $path") }) {
-            runScript(it, context, path.toString())
+            runScript(it, context, path.toString(), includes).toString()
         })
     })
 
@@ -40,4 +40,5 @@ class KtHtmlFile(val path: Path, val context: Map<String, Any?>) : Element(path.
  * ```
  * You can pass global variables into the templates with [context].
  */
-fun OutputPath.ktHtml(source: Path, context: Map<String, Any?> = emptyMap()) = children.add(KtHtmlFile(source, context))
+fun OutputPath.ktHtml(source: Path, context: Map<String, Any?> = emptyMap(), includes: List<Path> = this.includes) =
+    children.add(KtHtmlFile(source, context, includes))

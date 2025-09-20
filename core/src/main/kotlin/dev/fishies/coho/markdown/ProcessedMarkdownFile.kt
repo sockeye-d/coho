@@ -3,6 +3,7 @@ package dev.fishies.coho.markdown
 import dev.fishies.coho.OutputPath
 import dev.fishies.coho.core.err
 import dev.fishies.coho.escapeXml
+import dev.fishies.coho.parseMarkdownFrontmatter
 import net.mamoe.yamlkt.Yaml
 import org.intellij.markdown.ast.ASTNode
 import org.intellij.markdown.ast.getTextInNode
@@ -65,23 +66,9 @@ open class ProcessedMarkdownFile(
     var frontmatter: Map<String?, Any?> = emptyMap()
 
     override fun preprocessMarkdown(src: String): String {
-        if (!src.startsWith("```")) {
-            return src
-        }
-        val startIndex = if (src.startsWith("```yaml")) 7 else 3
-        val nextSeparator = src.indexOf("```", 3)
-        if (nextSeparator == -1) {
-            return src
-        }
-
-        val frontmatterText = src.substring(startIndex, nextSeparator - 1)
-        try {
-            frontmatter = Yaml.decodeMapFromString(frontmatterText)
-        } catch (e: IllegalArgumentException) {
-            err("Failed to parse frontmatter $frontmatterText. Reason: ${e.message}")
-        }
-
-        return src.substring(nextSeparator + 4)
+        val (newFrontmatter, newSrc) = parseMarkdownFrontmatter(src)
+        frontmatter = newFrontmatter ?: emptyMap()
+        return newSrc
     }
 
     override fun createHtml(src: String, tree: ASTNode, flavour: MarkdownFlavourDescriptor): String {

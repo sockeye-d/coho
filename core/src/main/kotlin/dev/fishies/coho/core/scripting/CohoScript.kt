@@ -24,6 +24,7 @@ class CohoScriptConfiguration : ScriptCompilationConfiguration({
         "java.nio.file.Path",
         "kotlin.io.path.*",
     )
+    defaultImports(Import::class)
     jvm {
         dependenciesFromCurrentContext(wholeClasspath = true)
     }

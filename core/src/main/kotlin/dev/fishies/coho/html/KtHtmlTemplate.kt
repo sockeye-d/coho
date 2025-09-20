@@ -6,6 +6,7 @@ import dev.fishies.coho.templateString
 import java.nio.file.Path
 import kotlin.io.path.readText
 import dev.fishies.coho.OutputPath
+import kotlin.reflect.KClass
 
 /**
  * Template the [source] like [ktHtml], but it returns a function you can then call with a string to be used as a
@@ -50,18 +51,27 @@ fun ktMdTemplate(
     source: Path,
     contentKey: String = "content",
     context: Map<String, Any?> = emptyMap(),
+    includes: List<Path> = emptyList(),
 ): (html: String) -> String = { innerHtml ->
     templateString(source.readText(), { err("No closing tag found in file $source") }) {
-        runScript(it, context + mapOf(contentKey to innerHtml), source.toString())
+        runScript(it, context + mapOf(contentKey to innerHtml), source.toString(), includes).toString()
     }
 }
+
+fun OutputPath.ktMdTemplate(
+    source: Path,
+    contentKey: String = "content",
+    context: Map<String, Any?> = emptyMap(),
+) = ktMdTemplate(source, contentKey, context, includes)
 
 /**
  * Immediately template the file at [source].
  *
  * @see [ktHtml]
  */
-fun ktTemplate(source: Path, context: Map<String, Any?> = emptyMap()) =
+fun ktTemplate(source: Path, context: Map<String, Any?> = emptyMap(), includes: List<Path> = emptyList()) =
     templateString(source.readText(), { err("No closing tag found in file $source") }) {
-        runScript(it, context, source.toString())
+        runScript(it, context, source.toString(), includes).toString()
     }
+
+fun OutputPath.ktTemplate(source: Path, context: Map<String, Any?> = emptyMap()) = ktTemplate(source, context, includes)
