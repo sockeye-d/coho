@@ -3,6 +3,7 @@ package dev.fishies.coho.cli
 import dev.fishies.coho.Element
 import dev.fishies.coho.RootPath
 import dev.fishies.coho.core.*
+import dev.fishies.coho.html.tag
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import kotlinx.cli.*

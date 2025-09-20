@@ -4,14 +4,8 @@ import dev.fishies.coho.OutputPath
 import dev.fishies.coho.core.*
 import dev.fishies.coho.highlightANSI
 import java.nio.file.Path
-import java.nio.file.Paths
-import kotlin.io.path.absolutePathString
-import kotlin.io.path.pathString
-import kotlin.io.path.readText
 import kotlin.script.experimental.api.*
-import kotlin.script.experimental.host.FileScriptSource
 import kotlin.script.experimental.host.toScriptSource
-import kotlin.script.experimental.jvm.JvmScriptEvaluationConfigurationBuilder.Companion.invoke
 import kotlin.script.experimental.jvmhost.BasicJvmScriptingHost
 import kotlin.script.experimental.jvmhost.createJvmCompilationConfigurationFromTemplate
 
@@ -37,7 +31,12 @@ private fun formatDiagnostic(sourceCode: SourceCode, diagnostic: ScriptDiagnosti
             printer("$scriptLabel: $message")
             return@with
         }
-        val line = sourceCode.text.highlightANSI("kotlin")!!.lines()[location.start.line - 1].trimEnd()
+        val lines = sourceCode.text.highlightANSI("kotlin")!!.lines()
+        if (location.start.line >= lines.size) {
+            printer("$scriptLabel: $message")
+            return@with
+        }
+        val line = lines[location.start.line - 1].trimEnd()
         val trimmedLine = line.trimStart()
         val shift = line.length - trimmedLine.length
         val column = location.start.col
@@ -117,12 +116,12 @@ fun eval(
 
 private class CohoImportAnnotationConfigurator(private val includes: List<Path>) :
     RefineScriptCompilationConfigurationHandler {
-        override fun invoke(context: ScriptConfigurationRefinementContext): ResultWithDiagnostics<ScriptCompilationConfiguration> {
-            return ScriptCompilationConfiguration(context.compilationConfiguration) {
-                this[importScripts] = includes.distinct().map { it.toFile().toScriptSource() }
-            }.asSuccess()
-        }
+    override fun invoke(context: ScriptConfigurationRefinementContext): ResultWithDiagnostics<ScriptCompilationConfiguration> {
+        return ScriptCompilationConfiguration(context.compilationConfiguration) {
+            this[importScripts] = includes.distinct().map { it.toFile().toScriptSource() }
+        }.asSuccess()
     }
+}
 
 /**
  * Evaluate the Kotlin script file at [script] with the given [context].
