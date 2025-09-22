@@ -16,6 +16,7 @@ typealias StatefulAttributeCustomizer = ProcessedMarkdownFile.(node: ASTNode, ta
 
 private val hrefFixingRegex = Regex("href=\"([^\"]+)\\.md\"")
 private val whitespaceRegex = Regex("\\s+")
+private val disallowedRegex = Regex("[^a-zA-Z0-9-]")
 
 /**
  * Attribute customizer that remaps hrefs in links to point to HTML files instead of Markdown files.
@@ -27,7 +28,7 @@ fun ProcessedMarkdownFile.hrefFixingAttributesCustomizer(
 fun ProcessedMarkdownFile.headingIDAttributeCustomizer(
     node: ASTNode, tagName: CharSequence, attributes: Iterable<CharSequence?>
 ) = if (tagName in listOf("h1", "h2", "h3", "h4", "h5", "h6")) attributes + "id=\"${
-    node.children.last().getTextInNode(content).trim().replace(whitespaceRegex, "-").lowercase().escapeXml()
+    node.children.last().getTextInNode(content).trim().replace(whitespaceRegex, "-").replace(disallowedRegex, "").lowercase().escapeXml()
 }\"" else attributes
 
 /**
