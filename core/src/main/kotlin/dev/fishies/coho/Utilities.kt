@@ -22,7 +22,7 @@ fun OutputPath.exec(executable: String, vararg arguments: Any, workingDirectory:
     val proc = ProcessBuilder().directory((workingDirectory ?: source.sourcePath).toFile())
         .command(executable, *arguments.map {
             when (it) {
-                is Path -> source.sourcePath.resolve(it).absolute().normalize().pathString
+                is Path -> it.absolute().normalize().pathString
                 else -> it.toString()
             }
         }.toTypedArray()).redirectOutput(ProcessBuilder.Redirect.PIPE).redirectError(ProcessBuilder.Redirect.INHERIT)

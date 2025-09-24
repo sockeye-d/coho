@@ -2,7 +2,9 @@ package dev.fishies.coho
 
 import dev.fishies.coho.core.err
 import java.nio.file.Path
+import kotlin.io.path.absolute
 import kotlin.io.path.absolutePathString
+import kotlin.io.path.pathString
 
 /**
  * @suppress
@@ -16,7 +18,7 @@ class ShellElement(
     override fun _generate(location: Path): List<Path> {
         val proc = ProcessBuilder().directory(workingDirectory.toFile()).command(executable, *arguments.map {
             when (it) {
-                is Path -> location.resolve(it).absolutePathString()
+                is Path -> it.absolute().absolute().normalize().pathString
                 else -> it.toString()
             }
         }.toTypedArray())
