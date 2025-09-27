@@ -5,7 +5,7 @@ import io.noties.prism4j.Prism4j.*
 import java.util.regex.Pattern.MULTILINE
 import java.util.regex.Pattern.compile
 
-private const val identifier = "[a-zA-Z_][a-zA-Z0-9-_]*"
+private const val nushellIdentifier = "[a-zA-Z_][a-zA-Z0-9-_]*"
 // language=
 private const val builtins = "debug experimental-options|str screaming-snake-case|help pipe-and-redirect|co" +
         "mmandline set-cursor|commandline get-cursor|keybindings default|scope engine-stats|keybindings listen|date l" +
@@ -52,10 +52,10 @@ fun createNushellGrammar(): Grammar {
         "argument-list",
         token(
             "argument",
-            pattern(compile("(?<=,\\s*(?:\\.\\s*\\.\\s*\\.\\s*)?)$identifier")),
-            pattern(compile("(?<=^\\s*)$identifier"))
+            pattern(compile("(?<=,\\s*(?:\\.\\s*\\.\\s*\\.\\s*)?)$nushellIdentifier")),
+            pattern(compile("(?<=^\\s*)$nushellIdentifier"))
         ),
-        token("declaration-type", pattern(compile("(?<=:\\s*)$identifier"), false, false, "class-name")),
+        token("declaration-type", pattern(compile("(?<=:\\s*)$nushellIdentifier"), false, false, "class-name")),
         token("punctuation", pattern(compile("[,:.=]"))),
     )
     val nu = grammar(
@@ -65,7 +65,7 @@ fun createNushellGrammar(): Grammar {
         token("interpolated-string"),
         token("double-quote-string", pattern(compile("\"[^\"]*?\""), false, true, "string")),
         token("raw-string", pattern(compile("r(#+)'.*?'\\1"), false, true, "string")),
-        token("variable", pattern(compile("\\$$identifier(.$identifier)*"))),
+        token("variable", pattern(compile("\\$$nushellIdentifier(.$nushellIdentifier)*"))),
         token(
             "number",
             pattern(compile("\\d+(\\.\\d+)?")),
@@ -74,16 +74,16 @@ fun createNushellGrammar(): Grammar {
             pattern(compile("0b[0-1]+")),
         ),
         token(
-            "variable-declaration", pattern(compile("(?<=(?:let|mut)\\s+)$identifier"), false, false, "variable")
+            "variable-declaration", pattern(compile("(?<=(?:let|mut)\\s+)$nushellIdentifier"), false, false, "variable")
         ),
         token(
             "argument-declaration",
             pattern(compile("(?<=\\{\\s*\\|).*?(?=\\|)"), false, true, null, argumentList),
-            pattern(compile("(?<=def\\s+$identifier\\s+\\[).*?(?=]\\s+\\{)"), false, true, null, argumentList),
-            pattern(compile("$identifier(?=\\s*:)"), false, true, "argument"),
+            pattern(compile("(?<=def\\s+$nushellIdentifier\\s+\\[).*?(?=]\\s+\\{)"), false, true, null, argumentList),
+            pattern(compile("$nushellIdentifier(?=\\s*:)"), false, true, "argument"),
         ),
         token(
-            "declaration-type", pattern(compile("(?<=:\\s*)$identifier"), false, false, "class-name")
+            "declaration-type", pattern(compile("(?<=:\\s*)$nushellIdentifier"), false, false, "class-name")
         ),
         token(
             "argument", pattern(compile("(?<=^|\\s)-+[\\w-]+(?=$|\\s)"))
@@ -97,7 +97,7 @@ fun createNushellGrammar(): Grammar {
             )
         ),
         token(
-            "if-command", pattern(compile("(?<=if\\s*\\(?)$identifier"), false, false, "function")
+            "if-command", pattern(compile("(?<=if\\s*\\(?)$nushellIdentifier"), false, false, "function")
         ),
         token(
             "keyword",
