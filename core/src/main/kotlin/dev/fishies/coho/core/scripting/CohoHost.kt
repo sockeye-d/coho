@@ -102,7 +102,7 @@ fun eval(
         when (it.severity) {
             ScriptDiagnostic.Severity.DEBUG -> formatDiagnostic(source, it) { msg -> info(msg, verbose = true) }
             ScriptDiagnostic.Severity.INFO -> formatDiagnostic(source, it, ::info)
-            ScriptDiagnostic.Severity.WARNING -> formatDiagnostic(source, it, ::note)
+            ScriptDiagnostic.Severity.WARNING -> formatDiagnostic(source, it, ::warning)
             ScriptDiagnostic.Severity.ERROR -> formatDiagnostic(source, it, ::err)
             ScriptDiagnostic.Severity.FATAL -> formatDiagnostic(source, it, ::err)
         }

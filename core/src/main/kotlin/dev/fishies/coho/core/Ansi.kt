@@ -76,6 +76,13 @@ fun note(string: String, verbose: Boolean = false, lineEnding: String = "\n") =
     if (Ansi.showVerbose || !verbose) print(string.prependIndent("${fg(TerminalColor.Yellow)}note:${reset} ") + lineEnding) else Unit
 
 /**
+ * Print [string] prefixed with `warning:` to stdout with the [lineEnding].
+ * @param verbose Whether the message should only show up if [Ansi.showVerbose] is true.
+ */
+fun warning(string: String, verbose: Boolean = false, lineEnding: String = "\n") =
+    if (Ansi.showVerbose || !verbose) print(string.prependIndent("${fg(TerminalColor.Yellow)}warning:${reset} ") + lineEnding) else Unit
+
+/**
  * Print [string] prefixed with `info:` to stdout with the [lineEnding].
  * @param verbose Whether the message should only show up if [Ansi.showVerbose] is true.
  */

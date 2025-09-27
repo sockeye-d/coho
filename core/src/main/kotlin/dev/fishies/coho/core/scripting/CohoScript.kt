@@ -31,4 +31,5 @@ class CohoScriptConfiguration : ScriptCompilationConfiguration({
     ide {
         acceptedLocations(ScriptAcceptedLocation.Everywhere)
     }
+    compilerOptions("-Xcontext-parameters")
 })

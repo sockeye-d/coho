@@ -3,7 +3,6 @@ package dev.fishies.coho.cli
 import dev.fishies.coho.Element
 import dev.fishies.coho.RootPath
 import dev.fishies.coho.core.*
-import dev.fishies.coho.html.tag
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import kotlinx.cli.*
@@ -125,10 +124,10 @@ fun main(args: Array<String>) {
         RootPath.rootBuildPath = tempBuildPath
         pos(
             "Evaluation complete in ${
-            measureTime {
-                structure = build(cohoScriptPath)
-            }
-        }")
+                measureTime {
+                    structure = build(cohoScriptPath)
+                }
+            }")
 
         if (structure == null) {
             tempBuildPath.deleteRecursively()

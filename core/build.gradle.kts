@@ -30,6 +30,9 @@ dependencies {
 
 kotlin {
     jvmToolchain(jvmTarget.toInt())
+    compilerOptions {
+        freeCompilerArgs.add("-Xcontext-parameters")
+    }
 }
 
 tasks.dokkaGeneratePublicationHtml {

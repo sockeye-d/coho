@@ -1,7 +1,7 @@
 package dev.fishies.coho
 
 import dev.fishies.coho.core.*
-import dev.fishies.coho.core.highlighting.prism
+import dev.fishies.coho.core.highlighting.Prism
 import dev.fishies.coho.core.scripting.eval
 import dev.fishies.coho.html.KtHtmlFile
 import io.noties.prism4j.AbsVisitor
@@ -11,7 +11,6 @@ import org.apache.commons.text.StringEscapeUtils
 import java.nio.file.Path
 import kotlin.io.path.absolute
 import kotlin.io.path.pathString
-import kotlin.reflect.KClass
 import kotlin.time.measureTime
 
 /**
@@ -151,8 +150,8 @@ private class ANSIVisitor(val sb: StringBuilder, val language: String) : AbsVisi
 private fun String.highlightInternal(language: String, visitor: (StringBuilder) -> AbsVisitor): String? {
     val sb = StringBuilder()
     val time = measureTime {
-        val grammar = language.run { prism.grammar(this) } ?: return null
-        val tokens = prism.tokenize(this, grammar)
+        val grammar = Prism.grammar(language) ?: return null
+        val tokens = Prism.tokenize(this, grammar)
         visitor(sb).visit(tokens)
     }
     info("Highlighting $language (length: $length) took $time", verbose = true)
