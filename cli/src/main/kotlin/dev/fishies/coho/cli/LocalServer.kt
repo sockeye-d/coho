@@ -33,7 +33,7 @@ private fun injectReloadJs(html: String): String {
 }
 
 fun runLocalServer(buildPath: Path, reload: StateFlow<Int>, noReloadScript: Boolean, port: Int = 8080) =
-    embeddedServer(Netty, port, host = "127.0.0.1") {
+    embeddedServer(Netty, port) {
         install(WebSockets)
         routing {
             webSocket("/reload") {
