@@ -18,12 +18,13 @@ val prism = Prism4j(object : GrammarLocator {
     val delegate = PrismBundleGrammarLocator()
     override fun grammar(prism4j: Prism4j, language: String) = when (language) {
         "qml" -> createQmlGrammar(prism4j)
+        in listOf("html", "xml", "html", "mathml", "svg") -> createMarkupGrammar(prism4j)
         "kthtml" -> createKtHtmlGrammar(prism4j)
         in arrayOf("nu", "nushell") -> createNushellGrammar()
         else -> delegate.grammar(prism4j, language)
     }
 
-    override fun languages() = delegate.languages() + "qml"
+    override fun languages() = setOf("qml", "kthtml") + delegate.languages()
 })
 
 /**
