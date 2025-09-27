@@ -9,13 +9,20 @@ import java.util.regex.Pattern.compile
 const val identifier = "[\\w-]+"
 fun createMarkupGrammar(prism4j: Prism4j): Grammar {
     val entity = token("entity", pattern(compile("&\\w*;"), false, true))
+    val insideString = grammar("inside-string", entity, token("string", pattern(compile(".*"))))
     val insideTag = grammar(
         "inside-tag",
         token("tag", pattern(compile("(?<=^<\\/?\\s*)$identifier"), false, false, "property")),
         token("attr-name", pattern(compile("$identifier(?=\\s*=)"))),
-        token("string", pattern(compile("(?<=$identifier\\s*=)(?:\".*?\"|.+?\\b)"))),
-        token("open", pattern(compile("^<\\/?"), false, true, "punctuation")),
-        token("close", pattern(compile("\\/?>$"), false, true, "punctuation")),
+        token(
+            "string", pattern(compile("(['\"]).*?\\1|(?<=$identifier=)[^\\s'\">]+"), false, true, null, insideString)
+        ),
+        token(
+            "punctuation",
+            pattern(compile("^<\\/?"), false, true, "open"),
+            pattern(compile("\\/?>$"), false, true, "close"),
+            pattern(compile("="), false),
+        ),
     )
     val markup = grammar(
         "markup",
