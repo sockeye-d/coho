@@ -11,7 +11,6 @@ root {
         )(it)
     }
 
-    md(src("a.md"))
     md(src("index.md"))
     cp(src("style.css"))
 }
