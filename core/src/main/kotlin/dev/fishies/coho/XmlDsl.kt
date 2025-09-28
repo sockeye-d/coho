@@ -40,13 +40,20 @@ context(builder: StringBuilder) operator fun String.invoke(
     builder.append("</$this>")
 }
 
+operator fun String.invoke(
+    vararg attributes: Pair<String, Any?>, inner: StringBuilder.() -> Unit = {}
+) = with(StringBuilder()) {
+    this@invoke(*attributes, inner = inner)
+    toString()
+}
+
 /**
  * Create a new XML builder context.
  *
  * @see html
  * @see invoke
  */
-fun xml(inner: StringBuilder.() -> Unit = {}) = StringBuilder().apply { inner() }.toString()
+fun xml(inner: StringBuilder.() -> Unit = {}) = buildString(inner)
 
 /**
  * Create a new XML builder context.
@@ -54,4 +61,4 @@ fun xml(inner: StringBuilder.() -> Unit = {}) = StringBuilder().apply { inner() 
  * @see xml
  * @see invoke
  */
-fun html(inner: StringBuilder.() -> Unit = {}) = StringBuilder().apply { inner() }.toString()
+fun html(inner: StringBuilder.() -> Unit = {}) = buildString(inner)
