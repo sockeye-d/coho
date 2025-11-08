@@ -2,18 +2,13 @@ package dev.fishies.coho.cli
 
 import dev.fishies.coho.Element
 import dev.fishies.coho.RootPath
-import dev.fishies.coho.cdata
 import dev.fishies.coho.core.*
-import dev.fishies.coho.invoke
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import jdk.javadoc.internal.doclets.formats.html.markup.RawHtml.cdata
 import kotlinx.cli.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.net.BindException
 import java.nio.file.*
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -26,6 +21,48 @@ import kotlin.time.measureTime
 @Suppress("unused")
 enum class Shell(val path: String) {
     Nu("coho.nu"), Zsh("_coho"),
+}
+
+fun isArgumentLabel(arg: String) = arg.startsWith("--")
+
+fun getLabelText(arg: String) = if (isArgumentLabel(arg)) arg.removePrefix("--") else null
+
+fun getParameterText(arg: String): String {
+    var backslashCount = 0
+    for (char in arg) {
+        if (char == '\\') backslashCount++ else break
+    }
+    return arg.drop(backslashCount.coerceAtMost(1))
+}
+
+fun splitArgs(args: Array<out String>): Pair<List<String>, Map<String, List<String>>> {
+    val cohoArgs = mutableListOf<String>()
+    var argsIndex = 0
+    while (argsIndex < args.size && args[argsIndex] != "--") {
+        cohoArgs.add(args[argsIndex++])
+    }
+    argsIndex++ // consume --
+    val mainArgs = mutableMapOf<String, List<String>>()
+    if (argsIndex < args.size) {
+        var key = getLabelText(args[argsIndex]) ?: return cohoArgs to mainArgs
+        var parameters = mutableListOf<String>()
+        argsIndex++ // consume --label
+        while (argsIndex < args.size) {
+            val arg = args[argsIndex]
+            val labelText = getLabelText(arg)
+            if (labelText == null) {
+                parameters.add(getParameterText(arg))
+            } else {
+                mainArgs[key] = parameters
+                key = labelText
+                parameters = mutableListOf()
+            }
+            argsIndex++
+        }
+        mainArgs[key] = parameters
+    }
+
+    return cohoArgs to mainArgs
 }
 
 @OptIn(ExperimentalCli::class, ExperimentalPathApi::class, ExperimentalAtomicApi::class)
@@ -71,13 +108,15 @@ fun main(args: Array<String>) {
         description = "Print shell completion scripts for various shells"
     )
     parser.subcommands(serve)
-    parser.parse(args)
+    val (cohoArgs, mainArgs) = splitArgs(args)
+    parser.parse(cohoArgs.toTypedArray())
     if (shell != null) {
         println(resources.getResource("/shell/${shell!!.path}")?.readText())
         return
     }
     Ansi.showVerbose = verbose
     Element.showProgress = !noProgress
+    RootPath.arguments = mainArgs
 
     if (create) {
         createProject(cohoScriptPath, force) ?: return

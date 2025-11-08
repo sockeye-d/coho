@@ -6,8 +6,15 @@ import kotlin.io.path.*
 /**
  * @suppress
  */
-class RootPath(sourceDirectory: Source, buildPath: Path) :
-    OutputPath("root", sourceDirectory, buildPath, { html: String -> "<!DOCTYPE HTML><html>$html</html>" }, emptyList()) {
+class RootPath(sourceDirectory: Source, buildPath: Path) : OutputPath(
+    "root", sourceDirectory, buildPath, { html: String -> "<!DOCTYPE HTML><html>$html</html>" }, emptyList()
+) {
+    /**
+     * The passed command line arguments. Useful for customizing build behavior.
+     */
+    val arguments
+        get() = RootPath.arguments
+
     override fun _generate(location: Path): List<Path> {
         location.createDirectory()
         for (child in children) {
@@ -32,6 +39,7 @@ class RootPath(sourceDirectory: Source, buildPath: Path) :
     companion object {
         lateinit var rootBuildPath: Path
         lateinit var scriptSourcePath: Path
+        lateinit var arguments: Map<String, List<String>>
     }
 }
 
