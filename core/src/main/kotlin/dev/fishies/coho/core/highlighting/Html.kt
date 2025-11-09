@@ -6,7 +6,7 @@ import java.util.regex.Pattern.CASE_INSENSITIVE
 import java.util.regex.Pattern.compile
 
 // language=regexp
-const val identifier = "[\\w-]+"
+private const val identifier = "[\\w-]+"
 fun createMarkupGrammar(prism4j: Prism4j): Grammar {
     val entity = token("entity", pattern(compile("&\\w*;"), false, true))
     val insideString = grammar("inside-string", entity, token("string", pattern(compile(".*"))))

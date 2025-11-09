@@ -112,11 +112,9 @@ fun OutputPath.include(path: Path, vararg parameters: Pair<String?, Any?>, funct
                 }
 
                 val result = func.callBy(passedParameters)
-                if (result !is RootPath) {
-                    err("Evaluation didn't result in a RootPath")
-                    return
+                if (result is RootPath) {
+                    children.addAll(result.children)
                 }
-                children.addAll(result.children)
             }
 
             is ResultValue.Value -> {

@@ -1,8 +1,11 @@
 package dev.fishies.coho.core.highlighting
 
 import dev.fishies.coho.core.PrismBundleGrammarLocator
+import dev.fishies.coho.core.err
+import dev.fishies.coho.core.highlighting.Prism.extraGrammars
 import io.noties.prism4j.*
 import io.noties.prism4j.annotations.PrismBundle
+import java.awt.SystemColor.text
 import java.util.regex.Matcher
 
 /**
@@ -12,26 +15,39 @@ import java.util.regex.Matcher
 @PrismBundle(
     includeAll = true, grammarLocatorClassName = "dev.fishies.coho.core.PrismBundleGrammarLocator",
 )
-class WhyDoesThisExist
+private class WhyDoesThisExist
 
 object Prism : Prism4j(object : GrammarLocator {
     val delegate = PrismBundleGrammarLocator()
     override fun grammar(prism4j: Prism4j, language: String) = when (language) {
+        in extraGrammars -> extraGrammars[language]!!(prism4j)
         "qml" -> createQmlGrammar(prism4j)
         in listOf("html", "xml", "html", "mathml", "svg") -> createMarkupGrammar(prism4j)
         "kthtml" -> createKtHtmlGrammar(prism4j)
+        "gdscript" -> createGdscriptGrammar()
         in arrayOf("nu", "nushell") -> createNushellGrammar()
         else -> delegate.grammar(prism4j, language)
     }
 
     override fun languages() = setOf("qml", "kthtml") + delegate.languages()
 }) {
+    private val extraGrammars = mutableMapOf<String, (prism4j: Prism4j) -> Grammar>()
+
+    fun registerGrammar(identifier: String, vararg extraIdentifiers: String, grammar: (prism4j: Prism4j) -> Grammar) {
+        extraGrammars[identifier] = grammar
+        for (extraIdentifier in extraIdentifiers) {
+            extraGrammars[extraIdentifier] = grammar
+        }
+    }
 
     override fun tokenize(text: String, grammar: Grammar): MutableList<Node> {
         val entries: MutableList<Node> = ArrayList(3)
-        entries.add(TextImpl(text))
-        // call the new matchGrammar instead of the bad one
+        entries.add(TextImpl(text)) // call the new matchGrammar instead of the bad one
+        // try {
         matchGrammar(text, entries, grammar, 0, 0, false, null)
+        // } catch (e: StackOverflowError) {
+        //     err("Matching failed on\n${text.prependIndent("  ")}\n(stack overflow)")
+        // }
         return entries
     }
 
