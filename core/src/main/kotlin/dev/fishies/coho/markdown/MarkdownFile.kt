@@ -1,6 +1,7 @@
 package dev.fishies.coho.markdown
 
 import dev.fishies.coho.*
+import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle
 import org.intellij.markdown.*
 import org.intellij.markdown.ast.ASTNode
 import org.intellij.markdown.ast.getTextInNode
@@ -9,6 +10,9 @@ import org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor
 import org.intellij.markdown.html.*
 import org.intellij.markdown.parser.LinkMap
 import org.intellij.markdown.parser.MarkdownParser
+import org.scilab.forge.jlatexmath.LaTeXAtom
+import org.scilab.forge.jlatexmath.TeXFormulaParser
+import org.scilab.forge.jlatexmath.TeXParser
 import java.nio.file.Path
 import java.util.regex.Pattern.compile
 import kotlin.io.path.*
@@ -39,8 +43,6 @@ private val highlightedCodeFenceProvider = object : GeneratingProvider {
         visitor: HtmlGenerator.HtmlGeneratingVisitor, text: String, node: ASTNode
     ) {
         val indentBefore = node.getTextInNode(text).commonPrefixWith(" ".repeat(10)).length
-
-        visitor.consumeHtml("<pre class=\"codeblock\">")
 
         var state = 0
 
@@ -73,20 +75,26 @@ private val highlightedCodeFenceProvider = object : GeneratingProvider {
                 )
             }
             if (state == 0 && child.type == MarkdownTokenTypes.EOL) {
-                visitor.consumeTagOpen(node, "code", *attributes.toTypedArray())
                 state = 1
             }
         }
-        val highlighted = language?.run { content.toString().highlight(this) }
-        visitor.consumeHtml(highlighted ?: content.toString().escapeHtml())
 
-        if (state == 0) {
+        if (language == "latex") {
+            visitor.consumeHtml(renderTeX(content.toString()))
+        } else {
+            visitor.consumeHtml("<pre class=\"codeblock\">")
             visitor.consumeTagOpen(node, "code", *attributes.toTypedArray())
+            val highlighted = language?.run { content.toString().highlight(this) } ?: content.toString().escapeHtml()
+            visitor.consumeHtml(highlighted)
+
+            if (state == 0) {
+                visitor.consumeTagOpen(node, "code", *attributes.toTypedArray())
+            }
+            if (lastChildWasContent) {
+                visitor.consumeHtml("\n")
+            }
+            visitor.consumeHtml("</code></pre>")
         }
-        if (lastChildWasContent) {
-            visitor.consumeHtml("\n")
-        }
-        visitor.consumeHtml("</code></pre>")
     }
 }
 
@@ -108,7 +116,8 @@ open class SyntaxHighlightedGFMFlavourDescriptor(
 /**
  * @suppress
  */
-open class MarkdownFile(var content: String, val path: Path, var tagRenderer: HtmlGenerator.TagRenderer) : Element(path.name) {
+open class MarkdownFile(var content: String, val path: Path, var tagRenderer: HtmlGenerator.TagRenderer) :
+    Element(path.name) {
     protected open fun preprocessMarkdown(src: String) = src
     protected open fun createHtml(src: String, tree: ASTNode, flavour: MarkdownFlavourDescriptor) =
         HtmlGenerator(src, tree, flavour).generateHtml(tagRenderer)

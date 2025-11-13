@@ -1,6 +1,4 @@
 import org.jetbrains.dokka.gradle.DokkaTask
-import org.jetbrains.dokka.base.DokkaBase
-import org.jetbrains.dokka.base.DokkaBaseConfiguration
 
 buildscript {
     dependencies {
@@ -25,6 +23,8 @@ dependencies {
     implementation(libs.markdown)
     implementation(libs.prism4j)
     implementation(libs.commonstext)
+    implementation(libs.jlatexmath)
+    implementation(libs.bundles.batik)
     kapt(libs.prism4j.bundler)
 }
 

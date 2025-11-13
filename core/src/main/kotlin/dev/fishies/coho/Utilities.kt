@@ -7,7 +7,18 @@ import dev.fishies.coho.html.KtHtmlFile
 import io.noties.prism4j.AbsVisitor
 import io.noties.prism4j.Prism4j
 import net.mamoe.yamlkt.Yaml
+import org.apache.batik.dom.GenericDOMImplementation
+import org.apache.batik.svggen.SVGGeneratorContext
+import org.apache.batik.svggen.SVGGraphics2D
 import org.apache.commons.text.StringEscapeUtils
+import org.scilab.forge.jlatexmath.TeXConstants
+import org.scilab.forge.jlatexmath.TeXFormula
+import org.scilab.forge.jlatexmath.TeXIcon
+import org.w3c.dom.DOMImplementation
+import org.w3c.dom.Document
+import java.awt.Dimension
+import java.awt.Insets
+import java.io.StringWriter
 import java.nio.file.Path
 import kotlin.io.path.absolute
 import kotlin.io.path.pathString
@@ -257,4 +268,27 @@ fun parseMarkdownFrontmatter(srcText: String): Pair<Map<String?, Any?>?, String>
     }
 
     return frontmatter to srcText.substring(nextSeparator + 4)
+}
+
+fun renderTeX(string: String): String {
+    val formula = TeXFormula(string)
+    val icon: TeXIcon = formula.createTeXIcon(TeXConstants.STYLE_DISPLAY, 20f)
+    icon.setForeground(java.awt.Color.WHITE)
+
+    val domImpl: DOMImplementation = GenericDOMImplementation.getDOMImplementation()
+    val document: Document = domImpl.createDocument(null, "svg", null)
+    val svgGenerator = SVGGraphics2D(SVGGeneratorContext.createDefault(document).apply {
+        graphicContextDefaults = SVGGeneratorContext.GraphicContextDefaults().apply {
+            paint = java.awt.Color.WHITE
+        }
+    }, true)
+
+    svgGenerator.setSVGCanvasSize(Dimension(icon.iconWidth, icon.iconHeight))
+    icon.paintIcon(null, svgGenerator, 0, 0)
+
+    val writer = StringWriter()
+    svgGenerator.stream(writer)
+    return writer.toString().replace(
+        "<svg", """<svg data-formula="${string.escapeXml()}" class="latex"""""
+    )
 }
