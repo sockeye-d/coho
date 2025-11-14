@@ -1,18 +1,15 @@
 package dev.fishies.coho.markdown
 
 import dev.fishies.coho.*
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle
 import org.intellij.markdown.*
 import org.intellij.markdown.ast.ASTNode
 import org.intellij.markdown.ast.getTextInNode
 import org.intellij.markdown.flavours.MarkdownFlavourDescriptor
+import org.intellij.markdown.flavours.gfm.GFMElementTypes
 import org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor
 import org.intellij.markdown.html.*
 import org.intellij.markdown.parser.LinkMap
 import org.intellij.markdown.parser.MarkdownParser
-import org.scilab.forge.jlatexmath.LaTeXAtom
-import org.scilab.forge.jlatexmath.TeXFormulaParser
-import org.scilab.forge.jlatexmath.TeXParser
 import java.nio.file.Path
 import java.util.regex.Pattern.compile
 import kotlin.io.path.*
@@ -78,25 +75,35 @@ private val highlightedCodeFenceProvider = object : GeneratingProvider {
                 state = 1
             }
         }
+        visitor.consumeHtml("<pre class=\"codeblock\">")
+        visitor.consumeTagOpen(node, "code", *attributes.toTypedArray())
+        val highlighted = language?.run { content.toString().highlight(this) } ?: content.toString().escapeHtml()
+        visitor.consumeHtml(highlighted)
 
-        if (language == "latex") {
-            visitor.consumeHtml(renderTeX(content.toString()))
-        } else {
-            visitor.consumeHtml("<pre class=\"codeblock\">")
+        if (state == 0) {
             visitor.consumeTagOpen(node, "code", *attributes.toTypedArray())
-            val highlighted = language?.run { content.toString().highlight(this) } ?: content.toString().escapeHtml()
-            visitor.consumeHtml(highlighted)
+        }
+        if (lastChildWasContent) {
+            visitor.consumeHtml("\n")
+        }
+        visitor.consumeHtml("</code></pre>")
+    }
+}
 
-            if (state == 0) {
-                visitor.consumeTagOpen(node, "code", *attributes.toTypedArray())
-            }
-            if (lastChildWasContent) {
-                visitor.consumeHtml("\n")
-            }
-            visitor.consumeHtml("</code></pre>")
+private fun createMathProvider(inline: Boolean) = object : GeneratingProvider {
+    override fun processNode(visitor: HtmlGenerator.HtmlGeneratingVisitor, text: String, node: ASTNode) {
+        val nodes = node.children.subList(1, node.children.size - 1)
+        val output = nodes.joinToString(separator = "") { it.getTextInNode(text) }.trim()
+        renderTeX(output, if (inline) TeXStyle.Text else TeXStyle.Display)?.let {
+            visitor.consumeHtml("<span class=\"latex\">")
+            visitor.consumeHtml(it)
+            visitor.consumeHtml("</span>")
         }
     }
 }
+
+private val blockMathProvider by lazy { createMathProvider(inline = false) }
+private val inlineMathProvider by lazy { createMathProvider(inline = true) }
 
 /**
  * Hacked together Markdown flavor descriptor to highlight codeblocks with Prism4j.
@@ -108,7 +115,9 @@ open class SyntaxHighlightedGFMFlavourDescriptor(
         val base = super.createHtmlGeneratingProviders(linkMap, baseURI)
         return base + mapOf(
             MarkdownElementTypes.CODE_SPAN to highlightedCodeSpanProvider,
-            MarkdownElementTypes.CODE_FENCE to highlightedCodeFenceProvider
+            MarkdownElementTypes.CODE_FENCE to highlightedCodeFenceProvider,
+            GFMElementTypes.BLOCK_MATH to blockMathProvider,
+            GFMElementTypes.INLINE_MATH to inlineMathProvider,
         )
     }
 }

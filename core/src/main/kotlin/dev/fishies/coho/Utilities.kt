@@ -11,13 +11,10 @@ import org.apache.batik.dom.GenericDOMImplementation
 import org.apache.batik.svggen.SVGGeneratorContext
 import org.apache.batik.svggen.SVGGraphics2D
 import org.apache.commons.text.StringEscapeUtils
-import org.scilab.forge.jlatexmath.TeXConstants
-import org.scilab.forge.jlatexmath.TeXFormula
-import org.scilab.forge.jlatexmath.TeXIcon
+import org.scilab.forge.jlatexmath.*
 import org.w3c.dom.DOMImplementation
 import org.w3c.dom.Document
 import java.awt.Dimension
-import java.awt.Insets
 import java.io.StringWriter
 import java.nio.file.Path
 import kotlin.io.path.absolute
@@ -270,25 +267,60 @@ fun parseMarkdownFrontmatter(srcText: String): Pair<Map<String?, Any?>?, String>
     return frontmatter to srcText.substring(nextSeparator + 4)
 }
 
-fun renderTeX(string: String): String {
-    val formula = TeXFormula(string)
-    val icon: TeXIcon = formula.createTeXIcon(TeXConstants.STYLE_DISPLAY, 20f)
-    icon.setForeground(java.awt.Color.WHITE)
+enum class TeXStyle(val intStyle: Int) {
+    /**
+     * The large versions of big operators are used and limits are placed under and over
+     * these operators (default). Symbols are rendered in the largest size.
+     */
+    Display(TeXConstants.STYLE_DISPLAY),
 
-    val domImpl: DOMImplementation = GenericDOMImplementation.getDOMImplementation()
-    val document: Document = domImpl.createDocument(null, "svg", null)
-    val svgGenerator = SVGGraphics2D(SVGGeneratorContext.createDefault(document).apply {
-        graphicContextDefaults = SVGGeneratorContext.GraphicContextDefaults().apply {
-            paint = java.awt.Color.WHITE
+    /**
+     * The small versions of big operators are used and limits are attached to
+     * these operators as scripts (default). The same size as in the display style
+     * is used to render symbols.
+     */
+    Text(TeXConstants.STYLE_TEXT),
+
+    /**
+     * The same as the text style, but symbols are rendered in a smaller size.
+     */
+    Script(TeXConstants.STYLE_SCRIPT),
+
+    /**
+     * The same as the script style, but symbols are rendered in a smaller size.
+     */
+    SmallScript(TeXConstants.STYLE_SCRIPT_SCRIPT),
+}
+
+fun renderTeX(string: String, style: TeXStyle = TeXStyle.Display): String? {
+    try {
+        val formula = TeXFormula(string)
+        val icon: TeXIcon = formula.createTeXIcon(style.intStyle, 20f)
+        icon.setForeground(java.awt.Color.WHITE)
+
+        val domImpl: DOMImplementation = GenericDOMImplementation.getDOMImplementation()
+        val document: Document = domImpl.createDocument(null, "svg", null)
+        val svgGenerator = SVGGraphics2D(SVGGeneratorContext.createDefault(document).apply {
+            graphicContextDefaults = SVGGeneratorContext.GraphicContextDefaults().apply {
+                paint = java.awt.Color.WHITE
+            }
+        }, true)
+
+        svgGenerator.setSVGCanvasSize(Dimension(icon.iconWidth, icon.iconHeight))
+        icon.paintIcon(null, svgGenerator, 0, 0)
+
+        val writer = StringWriter()
+        svgGenerator.stream(writer)
+        return writer.toString().replace(
+            "<svg", """<svg data-formula="${string.escapeXml()}" class="latex"""""
+        )
+    } catch (e: JMathTeXException) {
+        val lineCount = string.lines().size
+        if (lineCount == 1) {
+            err("TeX formula $string failed to parse: ${e.message}")
+        } else {
+            err("TeX formula\n${string.prependIndent("  ")}\nfailed to parse: ${e.message}")
         }
-    }, true)
-
-    svgGenerator.setSVGCanvasSize(Dimension(icon.iconWidth, icon.iconHeight))
-    icon.paintIcon(null, svgGenerator, 0, 0)
-
-    val writer = StringWriter()
-    svgGenerator.stream(writer)
-    return writer.toString().replace(
-        "<svg", """<svg data-formula="${string.escapeXml()}" class="latex"""""
-    )
+        return null
+    }
 }
