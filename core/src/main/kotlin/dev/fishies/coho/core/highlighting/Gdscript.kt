@@ -76,7 +76,7 @@ fun createGdscriptGrammar() = grammar(
     token("constant", pattern(compile("PI|TAU|NAN|INF"))),
     token("boolean", pattern(compile("true|false"))),
     token("keyword", pattern(compile("\\b(?:$keywords)\\b"))),
-    token("constant", pattern(compile("\\b[A-Z_][A-Z0-9_]*\\b"), false, true)),
+    token("constant", pattern(compile("\\b[A-Z_][A-Z0-9_]{4,}\\b"), false, true)),
     token("pascal-class-name", pattern(compile("\\b[A-Z][a-zA-Z0-9_]*\\b"), false, true, "class-name")),
     token("variant-class-name", pattern(compile("\\b(?:$variantTypes)\\b"), false, true, "class-name")),
     token("function", pattern(compile("$identifier(?=\\s*\\()"))),
