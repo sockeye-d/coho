@@ -54,8 +54,8 @@ private val variantTypes = listOf(
 fun createGdscriptGrammar() = grammar(
     "gdscript",
     token("comment", pattern(compile("#.*\\n"))),
-    token("double-quote-string", pattern(compile("r?\"(?:[^\"\\\\]|\\\\.)*+\""), false, true, "string")),
-    token("single-quote-string", pattern(compile("r?\'(?:[^\'\\\\]|\\\\.)*+\'"), false, true, "string")),
+    token("double-quote-string", pattern(compile("&?\\^?r?\"(?:[^\"\\\\]|\\\\.)*+\""), false, true, "string")),
+    token("single-quote-string", pattern(compile("&?\\^?r?\'(?:[^\'\\\\]|\\\\.)*+\'"), false, true, "string")),
     token("triple-double-quote-string", pattern(compile("r?(\"{3,}).*?\\1"), false, true, "string")),
     token("triple-single-quote-string", pattern(compile("r?(\'{3,}).*?\\1"), false, true, "string")),
     token("annotation", pattern(compile("@$identifier"), false, true)),
@@ -66,7 +66,7 @@ fun createGdscriptGrammar() = grammar(
     ),
     token(
         "number",
-        pattern(compile("-?(?:0x(?:[0-9a-fA-F]_?)+|0b(?:[01]_?)+|(?:(?:[0-9]_?)*\\.(?:[0-9]_?)+)(?:e-?(?:[0-9]_?)+)?|(?:[0-9]_?)+\\.?(?:e-?(?:[0-9]_?)+)?)"))
+        pattern(compile("-?(?:0[xX](?:[0-9a-fA-F]_?)+|0[bB](?:[01]_?)+|(?:[0-9]_?)*\\.(?:[0-9]_?)+(?:[eE]-?(?:[0-9]_?)+)?|(?:[0-9]_?)+\\.?(?:[eE]-?(?:[0-9]_?)+)?)"))
     ),
     token("operator", pattern(compile("=|\\+=|-=|\\*\\*=|\\*=|/=|%=|&=|\\^=|<<=|>>=|:\\s*=|->"))),
     token(
