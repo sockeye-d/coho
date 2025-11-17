@@ -16,7 +16,7 @@ private val variantTypes = listOf(
 fun createIniGrammar() = grammar(
     "ini",
     token("comment", pattern(compile(";.*\\n"))),
-    token("property", pattern(compile("^.+?(?==)", MULTILINE))),
+    token("ini-property", pattern(compile("^.+?(?==)", MULTILINE), false, false, "identifier")),
     token("class-name", pattern(compile("^\\[.+\\]$", MULTILINE))),
     token("string", pattern(compile("&?\\^?\"(?:[^\"\\\\]|\\\\.)*+\""))),
     token("boolean", pattern(compile("true|false"))),
