@@ -26,6 +26,7 @@ object Prism : Prism4j(object : GrammarLocator {
         "kthtml" -> createKtHtmlGrammar(prism4j)
         "gdscript" -> createGdscriptGrammar()
         in arrayOf("nu", "nushell") -> createNushellGrammar()
+        in arrayOf("cfg", "ini") -> createIniGrammar()
         else -> delegate.grammar(prism4j, language)
     }
 
