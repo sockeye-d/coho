@@ -17,8 +17,7 @@ import org.w3c.dom.Document
 import java.awt.Dimension
 import java.io.StringWriter
 import java.nio.file.Path
-import kotlin.io.path.absolute
-import kotlin.io.path.pathString
+import kotlin.io.path.*
 import kotlin.time.measureTime
 
 /**
@@ -324,3 +323,15 @@ fun renderTeX(string: String, style: TeXStyle = TeXStyle.Display): String? {
         return null
     }
 }
+
+/**
+ * Read YAML from [text] and cast it to [T]
+ */
+@Suppress("UNCHECKED_CAST")
+fun <T> yaml(text: String): T = Yaml.decodeAnyFromString(text) as T
+
+/**
+ * Read YAML from [path] and cast it to [T]
+ */
+@Suppress("UNCHECKED_CAST")
+fun <T> yaml(path: Path): T = Yaml.decodeAnyFromString(path.readText()) as T
